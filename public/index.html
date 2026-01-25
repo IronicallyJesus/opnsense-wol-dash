@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPNsense WOL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .toast-enter { opacity: 0; transform: translateX(-50%) translateY(20px); }
+        .toast-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-10 px-4 relative bg-slate-900">
+
+    <div class="w-full max-w-6xl mt-4 pb-20">
+        <header class="flex justify-between items-center mb-10 px-2">
+            <div>
+                <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                    <span class="bg-sky-500/10 text-sky-400 p-2 rounded-xl border border-sky-500/20"><i class="ph ph-lightning"></i></span>
+                    Network Wake
+                </h1>
+                <p class="text-slate-400 text-sm mt-2 ml-1">Dashboard</p>
+            </div>
+            <button onclick="loadHosts()" class="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 transition-colors border border-slate-700 shadow-lg">
+                <i class="ph ph-arrow-clockwise text-xl" id="refresh-icon"></i>
+            </button>
+        </header>
+
+        <div id="host-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Loader -->
+            <div class="col-span-1 md:col-span-2 lg:col-span-3 flex justify-center py-20 text-slate-500">
+                <i class="ph ph-spinner spin text-3xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Toast Notification -->
+    <div id="status-msg" class="fixed bottom-8 left-1/2 z-50 min-w-[320px] max-w-[90%] p-4 rounded-xl shadow-2xl text-center text-sm font-bold border backdrop-blur-xl transition-all duration-300 toast-enter pointer-events-none"></div>
+
+    <script>
+        const grid = document.getElementById('host-grid');
+        const statusMsg = document.getElementById('status-msg');
+        const refreshIcon = document.getElementById('refresh-icon');
+
+        async function loadHosts() {
+            refreshIcon.classList.add('spin');
+            grid.style.opacity = '0.5';
+            
+            try {
+                const res = await fetch('/api/hosts');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const hosts = await res.json();
+                renderHosts(hosts);
+            } catch (err) {
+                console.error(err);
+                grid.innerHTML = `
+                    <div class="col-span-1 md:col-span-2 lg:col-span-3 text-center p-8 border border-red-900/50 bg-red-900/20 rounded-3xl">
+                        <i class="ph ph-warning-circle text-4xl text-red-400 mb-2"></i>
+                        <p class="text-red-400 font-bold text-lg">Connection Failed</p>
+                        <p class="text-red-300/60 text-sm mt-1">Could not reach OPNsense API.</p>
+                    </div>`;
+            } finally {
+                refreshIcon.classList.remove('spin');
+                grid.style.opacity = '1';
+            }
+        }
+
+        function renderHosts(hosts) {
+            if (!Array.isArray(hosts) || hosts.length === 0) {
+                grid.innerHTML = `<div class="col-span-1 md:col-span-2 lg:col-span-3 text-center text-slate-500 py-20">No WOL hosts configured in OPNsense.</div>`;
+                return;
+            }
+
+            grid.innerHTML = hosts.map(host => `
+                <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-xl flex flex-col gap-5 hover:border-slate-600 transition-colors">
+                    
+                    <!-- Header Section -->
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-slate-700/50 rounded-xl text-sky-400 border border-slate-600/50 shrink-0">
+                            <i class="ph ph-desktop-tower text-2xl"></i>
+                        </div>
+                        <div class="flex flex-col overflow-hidden">
+                            <h3 class="font-bold text-lg text-white truncate leading-tight" title="${host.descr}">${host.descr || 'Unknown Host'}</h3>
+                            <div class="flex items-center gap-1.5 text-xs font-medium text-slate-400 mt-0.5">
+                                <i class="ph ph-network-slash text-sky-500"></i>
+                                <span class="uppercase tracking-wider font-bold text-slate-500">${host.interface || 'Unknown'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tech Details Box -->
+                    <div class="bg-slate-900/80 rounded-lg p-3 border border-slate-700/50 flex flex-col gap-1.5 shadow-inner">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-500 font-medium">MAC</span>
+                            <span class="font-mono text-slate-300 tracking-wide select-all">${host.mac}</span>
+                        </div>
+                    </div>
+
+                    <!-- Wide Wake Button -->
+                    <button onclick="wakeHost('${host.uuid}', '${host.descr || 'Host'}')" 
+                        class="mt-auto w-full bg-sky-600 hover:bg-sky-500 active:bg-sky-400 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-sky-900/20 hover:shadow-sky-500/20 transition-all flex items-center justify-center gap-2 group transform active:scale-[0.98]">
+                        <i class="ph ph-power text-lg font-bold"></i>
+                        <span>Wake Host</span>
+                    </button>
+
+                </div>
+            `).join('');
+        }
+
+        async function wakeHost(uuid, name) {
+            showStatus(`Sending wake signal to ${name}...`, 'info');
+            try {
+                const res = await fetch(`/api/wake/${uuid}`, { method: 'POST' });
+                const data = await res.json();
+                
+                if (res.ok && (data.status === "OK" || data.result === "OK")) {
+                    showStatus(`${name} signal sent successfully!`, 'success');
+                } else {
+                    showStatus(`Failed to wake ${name}.`, 'error');
+                }
+            } catch (err) {
+                showStatus(`Network error waking ${name}.`, 'error');
+            }
+        }
+
+        let toastTimeout;
+
+        function showStatus(msg, type) {
+            clearTimeout(toastTimeout);
+            statusMsg.textContent = msg;
+            
+            const baseClasses = "fixed bottom-8 left-1/2 z-50 min-w-[320px] max-w-[90%] p-4 rounded-xl shadow-2xl text-center text-sm font-bold border backdrop-blur-xl transition-all duration-300 toast-visible";
+
+            const styles = {
+                'success': 'bg-emerald-900/90 text-emerald-300 border-emerald-500/50 shadow-emerald-900/40',
+                'error': 'bg-red-900/90 text-red-300 border-red-500/50 shadow-red-900/40',
+                'info': 'bg-slate-800/90 text-sky-300 border-sky-500/50 shadow-sky-900/40'
+            };
+            
+            statusMsg.className = `${baseClasses} ${styles[type] || styles.info}`;
+            
+            toastTimeout = setTimeout(() => {
+                statusMsg.className = "fixed bottom-8 left-1/2 z-50 min-w-[320px] max-w-[90%] p-4 rounded-xl shadow-2xl text-center text-sm font-bold border backdrop-blur-xl transition-all duration-300 toast-enter pointer-events-none";
+            }, 3000);
+        }
+
+        loadHosts();
+    </script>
+</body>
+</html>
