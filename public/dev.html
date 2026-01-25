@@ -47,12 +47,12 @@
         // --- MOCK DATA ---
         // Using raw OPNsense interface IDs (lan, optX)
         const MOCK_DATA = [
-            { uuid: '101', descr: 'TrueNAS Core', mac: '00:1B:21:44:55:66', interface: 'opt1' },
-            { uuid: '102', descr: 'Plex Server', mac: 'AA:BB:CC:DD:EE:01', interface: 'lan' },
-            { uuid: '103', descr: 'Gaming Rig', mac: '12:34:56:78:90:AB', interface: 'lan' },
-            { uuid: '104', descr: 'Basement Printer', mac: '98:76:54:32:10:FF', interface: 'opt2' },
-            { uuid: '105', descr: 'NVIDIA Shield', mac: '11:22:33:44:55:66', interface: 'opt2' },
-            { uuid: '106', descr: 'Backup Pi', mac: 'B8:27:EB:00:00:01', interface: 'opt5' }
+            { uuid: '101', descr: 'TrueNAS Core', mac: '00:1B:21:44:55:66', interface: 'opt1', '%interface': 'SERVER_VLAN' },
+            { uuid: '102', descr: 'Plex Server', mac: 'AA:BB:CC:DD:EE:01', interface: 'lan', '%interface': 'LAN' },
+            { uuid: '103', descr: 'Gaming Rig', mac: '12:34:56:78:90:AB', interface: 'lan', '%interface': 'LAN' },
+            { uuid: '104', descr: 'Basement Printer', mac: '98:76:54:32:10:FF', interface: 'opt2', '%interface': 'IOT' },
+            { uuid: '105', descr: 'NVIDIA Shield', mac: '11:22:33:44:55:66', interface: 'opt2', '%interface': 'IOT' },
+            { uuid: '106', descr: 'Backup Pi', mac: 'B8:27:EB:00:00:01', interface: 'opt5', '%interface': 'BACKUP_NET' }
         ];
 
         const grid = document.getElementById('host-grid');
@@ -82,7 +82,7 @@
                             <h3 class="font-bold text-lg text-white truncate leading-tight" title="${host.descr}">${host.descr}</h3>
                             <div class="flex items-center gap-1.5 text-xs font-medium text-slate-400 mt-0.5">
                                 <i class="ph ph-network text-sky-500"></i>
-                                <span class="uppercase tracking-wider font-bold text-slate-500">${host.interface || 'UNKNOWN'}</span>
+                                <span class="uppercase tracking-wider font-bold text-slate-500">${host['%interface'] || host.interface || 'UNKNOWN'}</span>
                             </div>
                         </div>
                     </div>
