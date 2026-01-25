@@ -46,6 +46,16 @@
         const statusMsg = document.getElementById('status-msg');
         const refreshIcon = document.getElementById('refresh-icon');
 
+        function escapeHtml(text) {
+            if (text == null) return '';
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         async function loadHosts() {
             refreshIcon.classList.add('spin');
             grid.style.opacity = '0.5';
@@ -75,7 +85,13 @@
                 return;
             }
 
-            grid.innerHTML = hosts.map(host => `
+            grid.innerHTML = hosts.map(host => {
+                const descr = escapeHtml(host.descr || 'Unknown Host');
+                const iface = escapeHtml(host['%interface'] || host.interface || 'Unknown');
+                const mac = escapeHtml((host.mac || '').toUpperCase());
+                const uuid = escapeHtml(host.uuid);
+
+                return `
                 <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-xl flex flex-col gap-5 hover:border-slate-600 transition-colors">
                     
                     <!-- Header Section -->
@@ -84,10 +100,10 @@
                             <i class="ph ph-desktop-tower text-2xl"></i>
                         </div>
                         <div class="flex flex-col overflow-hidden">
-                            <h3 class="font-bold text-lg text-white truncate leading-tight" title="${host.descr}">${host.descr || 'Unknown Host'}</h3>
+                            <h3 class="font-bold text-lg text-white truncate leading-tight" title="${descr}">${descr}</h3>
                             <div class="flex items-center gap-1.5 text-xs font-medium text-slate-400 mt-0.5">
                                 <i class="ph ph-network text-sky-500"></i>
-                                <span class="uppercase tracking-wider font-bold text-slate-500">${host['%interface'] || host.interface || 'Unknown'}</span>
+                                <span class="uppercase tracking-wider font-bold text-slate-500">${iface}</span>
                             </div>
                         </div>
                     </div>
@@ -96,19 +112,19 @@
                     <div class="bg-slate-900/80 rounded-lg p-3 border border-slate-700/50 flex flex-col gap-1.5 shadow-inner">
                         <div class="flex justify-between items-center text-xs">
                             <span class="text-slate-500 font-medium">MAC</span>
-                            <span class="font-mono text-slate-300 tracking-wide select-all">${(host.mac || '').toUpperCase()}</span>
+                            <span class="font-mono text-slate-300 tracking-wide select-all">${mac}</span>
                         </div>
                     </div>
 
                     <!-- Wide Wake Button -->
-                    <button onclick="wakeHost('${host.uuid}', '${host.descr || 'Host'}')" 
+                    <button data-uuid="${uuid}" data-descr="${descr}"
                         class="mt-auto w-full bg-sky-600 hover:bg-sky-500 active:bg-sky-400 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-sky-900/20 hover:shadow-sky-500/20 transition-all flex items-center justify-center gap-2 group transform active:scale-[0.98]">
                         <i class="ph ph-power text-lg font-bold"></i>
                         <span>Wake Host</span>
                     </button>
 
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         async function wakeHost(uuid, name) {
