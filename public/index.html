@@ -127,6 +127,14 @@
             `}).join('');
         }
 
+        // Event delegation for wake buttons
+        grid.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-uuid]');
+            if (btn) {
+                wakeHost(btn.dataset.uuid, btn.dataset.descr);
+            }
+        });
+
         async function wakeHost(uuid, name) {
             showStatus(`Sending wake signal to ${name}...`, 'info');
             try {
