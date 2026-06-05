@@ -65,6 +65,16 @@ The server is configured entirely through environment variables:
 | `PORT` | ❌ | `3000` | Server listen port |
 | `VERIFY_SSL` | ❌ | `false` | Set to `"true"` to verify SSL cert |
 | `HOST_IPS` | ❌ | `{}` | JSON map of host descriptions to IPs for status checks |
+| `DEMO_MODE` | ❌ | `false` | Set to `"true"` to run with mock data — no OPNsense needed |
+
+### Demo Mode
+
+Set `DEMO_MODE=true` to run a fully functional dashboard with 6 mock hosts (4 online, 2 offline) — no OPNsense connection required. Ideal for testing, development, or taking screenshots:
+
+```sh
+DEMO_MODE=true node server.js
+# → http://localhost:3000
+```
 
 ### HOST_IPS
 
@@ -112,6 +122,13 @@ docker run -d \
 ```
 
 > **Note:** Docker containers need network access to ping local hosts. Use `--network host` or ensure the container can reach your LAN.
+
+### Demo (no OPNsense required)
+
+```sh
+docker run -d -p 3000:3000 -e DEMO_MODE=true opnsense-wol
+# → http://localhost:3000
+```
 
 ## API Endpoints
 
