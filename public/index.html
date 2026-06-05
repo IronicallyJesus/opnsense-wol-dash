@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OPNsense WOL v2</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         /* ── Theme System ── */
         :root {
@@ -112,9 +111,6 @@
             color: var(--text);
         }
 
-        .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
         .toast-enter { opacity: 0; transform: translateX(-50%) translateY(20px); }
         .toast-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -135,12 +131,7 @@
         <!-- Header -->
         <header class="flex flex-wrap justify-between items-center gap-4 mb-10 px-2">
             <div>
-                <h1 class="text-3xl font-bold flex items-center gap-3" style="color: var(--text-heading)">
-                    <span class="p-2 rounded-xl border" style="background: var(--accent-bg); color: var(--accent); border-color: var(--accent-border);">
-                        <i class="ph ph-lightning"></i>
-                    </span>
-                    Network Wake
-                </h1>
+                <h1 class="text-3xl font-bold" style="color: var(--text-heading)">Network Wake</h1>
                 <p class="text-sm mt-2 ml-1" style="color: var(--text-muted)">Dashboard <span id="version-tag" class="text-xs opacity-60">v2</span></p>
             </div>
 
@@ -157,22 +148,20 @@
                         <option value="rose">Rose Dark</option>
                         <option value="light">Light</option>
                     </select>
-                    <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-sm pointer-events-none" style="color: var(--text-muted)"></i>
                 </div>
 
                 <!-- Wake All Button -->
                 <button id="wake-all-btn" onclick="wakeAll()" class="py-2.5 px-5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg transform active:scale-[0.98]"
                     style="background: var(--accent); color: #fff;">
-                    <i class="ph ph-power text-lg"></i>
                     <span>Wake All</span>
                 </button>
-
-                <!-- Refresh Button -->
-                <button onclick="loadHosts()" class="ml-auto p-3 rounded-xl transition-colors border shadow-lg"
-                    style="background: var(--bg-card); color: var(--accent); border-color: var(--border);">
-                    <i class="ph ph-arrow-clockwise text-xl" id="refresh-icon"></i>
-                </button>
             </div>
+
+            <!-- Refresh Button -->
+            <button onclick="loadHosts()" class="p-3 rounded-xl transition-colors border shadow-lg"
+                style="background: var(--bg-card); color: var(--accent); border-color: var(--border);">
+                Refresh
+            </button>
         </header>
 
         <!-- Last Updated + Auto-Refresh indicator -->
@@ -187,7 +176,7 @@
         <!-- Host Grid -->
         <div id="host-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="col-span-1 md:col-span-2 lg:col-span-3 flex justify-center py-20" style="color: var(--text-muted)">
-                <i class="ph ph-spinner spin text-3xl"></i>
+                Loading...
             </div>
         </div>
     </div>
@@ -199,7 +188,6 @@
         // ── State ──
         const grid = document.getElementById('host-grid');
         const statusMsg = document.getElementById('status-msg');
-        const refreshIcon = document.getElementById('refresh-icon');
         let hosts = [];
         let statusCheckInterval = null;
 
@@ -244,7 +232,6 @@
 
         // ── Load Hosts ──
         async function loadHosts() {
-            refreshIcon.classList.add('spin');
             grid.style.opacity = '0.6';
 
             try {
@@ -264,12 +251,10 @@
                 grid.innerHTML = `
                     <div class="col-span-1 md:col-span-2 lg:col-span-3 text-center p-8 border rounded-3xl"
                         style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
-                        <i class="ph ph-warning-circle text-4xl mb-2" style="color: #ef4444"></i>
                         <p class="font-bold text-lg" style="color: #fca5a5">Connection Failed</p>
                         <p class="text-sm mt-1" style="color: rgba(252, 165, 165, 0.6)">Could not reach OPNsense API.</p>
                     </div>`;
             } finally {
-                refreshIcon.classList.remove('spin');
                 grid.style.opacity = '1';
             }
         }
@@ -342,16 +327,12 @@
 
                     <!-- Header -->
                     <div class="flex items-center gap-3">
-                        <div class="p-2.5 rounded-xl border shrink-0" style="background: var(--icon-bg); color: var(--accent); border-color: var(--icon-border)">
-                            <i class="ph ph-desktop-tower text-xl"></i>
-                        </div>
                         <div class="flex flex-col overflow-hidden min-w-0">
                             <div class="flex items-center gap-2">
                                 ${statusDot}
                                 <h3 class="font-bold text-lg truncate leading-tight" style="color: var(--text-heading)" title="${descr}">${descr}</h3>
                             </div>
                             <div class="flex items-center gap-1.5 text-xs font-medium mt-0.5" style="color: var(--text-muted)">
-                                <i class="ph ph-network" style="color: var(--accent)"></i>
                                 <span class="uppercase tracking-wider font-bold opacity-60">${iface}</span>
                             </div>
                         </div>
@@ -376,7 +357,6 @@
                         style="background: var(--accent); color: #fff;"
                         onmouseenter="this.style.background='var(--accent-hover)'"
                         onmouseleave="this.style.background='var(--accent)'">
-                        <i class="ph ph-power text-lg font-bold"></i>
                         <span>Wake Host</span>
                     </button>
                 </div>
@@ -386,11 +366,9 @@
         // ── Wake All Hosts ──
         async function wakeAll() {
             const btn = document.getElementById('wake-all-btn');
-            const icon = btn.querySelector('i');
             const span = btn.querySelector('span');
             const origText = span.textContent;
             btn.disabled = true;
-            icon.classList.add('spin');
             span.textContent = 'Waking...';
 
             try {
@@ -410,7 +388,6 @@
                 showToast('Network error. Try again.', 'error');
             } finally {
                 btn.disabled = false;
-                icon.classList.remove('spin');
                 span.textContent = origText;
             }
         }
