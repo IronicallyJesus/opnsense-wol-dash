@@ -1,0 +1,9 @@
+node_modules
+.git
+*.md
+.gitea
+.vscode
+Dockerfile
+.dockerignore
+.gitignore
+screenshot.png

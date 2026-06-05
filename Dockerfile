@@ -1,21 +1,20 @@
-# Use a lightweight Node.js image
-FROM node:20-alpine
-
-# Set working directory
+# ── Build Stage ──
+FROM node:22-alpine AS build
 WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
-# Copy package files first for better caching
-COPY package.json ./
+# ── Runtime Stage ──
+FROM node:22-alpine
+WORKDIR /app
+RUN apk add --no-cache iputils  # provides ping for host status checks
+COPY --from=build /app/node_modules ./node_modules
+COPY server.js package.json ./
+COPY public/ ./public/
 
-# Install only production dependencies
-RUN npm install --only=production
-
-# Copy the rest of the app
-COPY server.js .
-COPY public ./public
-
-# Expose the port
 EXPOSE 3000
+USER node
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
 
-# Start the server
 CMD ["node", "server.js"]
