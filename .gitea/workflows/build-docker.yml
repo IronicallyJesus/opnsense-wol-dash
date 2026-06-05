@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-deploy:
-    uses: hermes_bot/actions/.gitea/workflows/build-and-deploy.yml@main
+    uses: twk95/actions/.gitea/workflows/build-and-deploy.yml@main
     with:
       service_name: opnsense-wol
     secrets: inherit
