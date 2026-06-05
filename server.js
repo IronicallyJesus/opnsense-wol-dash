@@ -131,18 +131,48 @@ app.post('/api/wake/:uuid', async (req, res) => {
   }
 });
 
+// API: Wake All Hosts — sends WOL to every host at once
+app.post('/api/wake-all', async (req, res) => {
+  if (DEMO_MODE) {
+    await new Promise(r => setTimeout(r, 800));
+    return res.json({ status: 'OK', count: DEMO_HOSTS.length });
+  }
+
+  if (!API_KEY || !API_SECRET || !OPNSENSE_URL) {
+    return res.status(500).json({ error: 'Missing OPNsense configuration env vars.' });
+  }
+
+  try {
+    const hostRes = await client.post('/api/wol/wol/searchHost', {
+      current: 1, rowCount: 1000, sort: {}, searchPhrase: ''
+    });
+    const hosts = hostRes.data.rows || [];
+    const results = [];
+    for (const host of hosts) {
+      try {
+        const wakeRes = await client.post('/api/wol/wol/set', { uuid: host.uuid });
+        results.push({ descr: host.descr, status: wakeRes.data.status || 'OK' });
+      } catch (e) {
+        results.push({ descr: host.descr, status: 'FAILED', error: e.message });
+      }
+    }
+    res.json({ status: 'OK', count: hosts.length, results });
+  } catch (error) {
+    console.error('Error waking all hosts:', error.message);
+    res.status(500).json({ error: 'Failed to wake hosts' });
+  }
+});
+
 // API: Host Status — ping each host to check online/offline (or demo data)
 app.get('/api/status', async (req, res) => {
   if (DEMO_MODE) {
-    // Return a realistic mix: some online, some offline, one unknown
-    return res.json({
-      'Office Desktop': { online: true },
-      'Living Room HTPC': { online: true },
-      'NAS Server': { online: false },
-      'Printer': { online: true },
-      'Garage Workstation': { online: false },
-      'Media Server': { online: true }
-    });
+    // Randomize online/offline per request for realistic demo behavior
+    const statuses = {};
+    for (const host of DEMO_HOSTS) {
+      // 60% chance online, 40% offline — varied enough to be interesting
+      statuses[host.descr] = { online: Math.random() < 0.6 };
+    }
+    return res.json(statuses);
   }
 
   const statuses = {};

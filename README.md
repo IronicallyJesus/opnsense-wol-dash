@@ -9,7 +9,9 @@ A lightweight web dashboard for waking devices on your network through the OPNse
 - **Host Status** — Ping-based online/offline indicators with pulsing green dots. Map host names to IPs via `HOST_IPS` env var.
 - **Theme Selector** — 5 color themes (Slate Dark, Emerald Dark, Violet Dark, Rose Dark, Light) persisted to localStorage.
 - **Wake History** — Per-host last-wake timestamps with relative time display (stored in browser localStorage).
+- **Wake All** — One-click button to send magic packets to every host at once.
 - **Auto-Refresh** — Host list and status auto-refresh every 30 seconds.
+- **Online-First Sort** — Cards sort with online hosts first, then unknown, then offline.
 - **Improved UX** — Fade-in cards, hover transitions, cleaner toast notifications, status summary bar.
 
 ## Features
@@ -18,6 +20,7 @@ A lightweight web dashboard for waking devices on your network through the OPNse
 |---|---|
 | **Host Discovery** | Fetches all WOL-configured hosts directly from OPNsense |
 | **One-Click Wake** | Sends magic packet via OPNsense API with toast confirmation |
+| **Wake All** | One-click button wakes every host at once |
 | **Host Status** | Optional ping-based online/offline checks with visual indicators |
 | **Theme Selector** | 5 preset color themes with localStorage persistence |
 | **Wake History** | Tracks when each host was last woken |
@@ -110,16 +113,26 @@ Open `http://localhost:3000` to view the dashboard.
 ### Docker
 
 ```sh
+# Build and run
 docker build -t opnsense-wol .
-
-docker run -d \
-  -p 3000:3000 \
-  -e OPNSENSE_URL=https://opnsense.lan \
-  -e OPNSENSE_API_KEY=your-key \
-  -e OPNSENSE_API_SECRET=your-secret \
-  -e HOST_IPS='{"My Desktop":"192.168.1.100"}' \
-  opnsense-wol
+docker run -d -p 3000:3000 -e DEMO_MODE=true opnsense-wol
 ```
+
+### Docker Compose
+
+```sh
+# Run in demo mode (no OPNsense required)
+docker compose up -d
+
+# Run with real OPNsense (edit docker-compose.yml first)
+OPNSENSE_URL=https://opnsense.lan \
+OPNSENSE_API_KEY=your-key \
+OPNSENSE_API_SECRET=your-secret \
+HOST_IPS='{"My PC":"192.168.1.50"}' \
+docker compose up -d
+```
+
+Or edit `docker-compose.yml` directly to set environment variables for production.
 
 > **Note:** Docker containers need network access to ping local hosts. Use `--network host` or ensure the container can reach your LAN.
 
@@ -136,6 +149,7 @@ docker run -d -p 3000:3000 -e DEMO_MODE=true opnsense-wol
 |---|---|---|
 | `GET` | `/api/hosts` | List all WOL hosts from OPNsense |
 | `POST` | `/api/wake/:uuid` | Send wake signal to a host by UUID |
+| `POST` | `/api/wake-all` | Send wake signal to all configured hosts |
 | `GET` | `/api/status` | Ping all configured hosts, returns `{descr: {online: bool}}` |
 | `GET` | `/health` | Health check endpoint |
 
@@ -159,7 +173,8 @@ Your choice persists in localStorage across sessions.
 ├── server.js            # Express server (API proxy + status checks)
 ├── public/
 │   └── index.html       # Frontend (Tailwind CSS via CDN, themes, status, wake history)
-├── Dockerfile           # Production build (Alpine Node.js)
+├── Dockerfile           # Production build (Alpine Node.js, includes ping)
+├── docker-compose.yml   # One-command demo or production deployment
 ├── .dockerignore
 ├── package.json
 └── .gitea/workflows/    # CI/CD (Docker build + deploy on v* tags)

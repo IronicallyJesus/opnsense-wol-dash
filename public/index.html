@@ -160,6 +160,13 @@
                     <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-sm pointer-events-none" style="color: var(--text-muted)"></i>
                 </div>
 
+                <!-- Wake All Button -->
+                <button id="wake-all-btn" onclick="wakeAll()" class="py-2.5 px-5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg transform active:scale-[0.98]"
+                    style="background: var(--accent); color: #fff;">
+                    <i class="ph ph-power text-lg"></i>
+                    <span>Wake All</span>
+                </button>
+
                 <!-- Refresh Button -->
                 <button onclick="loadHosts()" class="p-3 rounded-xl transition-colors border shadow-lg"
                     style="background: var(--bg-card); color: var(--accent); border-color: var(--border);">
@@ -306,7 +313,13 @@
                 return;
             }
 
-            grid.innerHTML = hosts.map(host => {
+            // Sort: online first, then unknown, then offline
+            const sorted = [...hosts].sort((a, b) => {
+                const order = { true: 0, null: 1, false: 2 };
+                return (order[a._online] ?? 1) - (order[b._online] ?? 1);
+            });
+
+            grid.innerHTML = sorted.map(host => {
                 const descr = esc(host.descr || 'Unknown Host');
                 const iface = esc(host.interface || host['%interface'] || 'Unknown');
                 const mac = esc((host.mac || '').toUpperCase());
@@ -368,6 +381,38 @@
                     </button>
                 </div>
             `}).join('');
+        }
+
+        // ── Wake All Hosts ──
+        async function wakeAll() {
+            const btn = document.getElementById('wake-all-btn');
+            const icon = btn.querySelector('i');
+            const span = btn.querySelector('span');
+            const origText = span.textContent;
+            btn.disabled = true;
+            icon.classList.add('spin');
+            span.textContent = 'Waking...';
+
+            try {
+                const res = await fetch('/api/wake-all', { method: 'POST' });
+                const data = await res.json();
+                if (res.ok && data.status === 'OK') {
+                    // Record wake for all hosts
+                    for (const host of hosts) {
+                        recordWake(host.uuid, host.descr || 'Unknown');
+                    }
+                    showToast(`Wake signals sent to ${data.count} hosts!`, 'success');
+                    setTimeout(() => loadHosts(), 500);
+                } else {
+                    showToast('Failed to send wake signals.', 'error');
+                }
+            } catch {
+                showToast('Network error. Try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                icon.classList.remove('spin');
+                span.textContent = origText;
+            }
         }
 
         // ── Wake Host ──
