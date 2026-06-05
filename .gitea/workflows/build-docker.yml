@@ -52,4 +52,4 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker exec dockge sh -c 'cd /opt/stacks/web-stack && docker compose pull opnsense-wol && docker compose up -d --no-deps --remove-orphans opnsense-wol'
+            docker exec dockge-dockge-1 sh -c 'cd /opt/stacks/web-stack && docker compose pull opnsense-wol && docker compose up -d --no-deps --remove-orphans opnsense-wol'
