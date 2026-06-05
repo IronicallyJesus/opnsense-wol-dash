@@ -1,77 +1,265 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="slate">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OPNsense WOL</title>
+    <title>OPNsense WOL v2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
-        body { background-color: #0f172a; color: #e2e8f0; }
+        /* ── Theme System ── */
+        :root {
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-inner: #0f172a;
+            --border: #334155;
+            --border-hover: #475569;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-heading: #f8fafc;
+            --accent: #0ea5e9;
+            --accent-bg: rgba(14, 165, 233, 0.1);
+            --accent-border: rgba(14, 165, 233, 0.2);
+            --accent-hover: #0284c7;
+            --icon-bg: rgba(51, 65, 85, 0.5);
+            --icon-border: rgba(71, 85, 105, 0.5);
+            --toast-success: rgba(6, 95, 70, 0.9);
+            --toast-error: rgba(127, 29, 29, 0.9);
+            --toast-info: rgba(30, 41, 59, 0.9);
+            --online: #22c55e;
+            --offline: #64748b;
+            --header-bg: transparent;
+        }
+
+        [data-theme="emerald"] {
+            --bg: #022c22;
+            --bg-card: #064e3b;
+            --bg-card-inner: #022c22;
+            --border: #065f46;
+            --border-hover: #047857;
+            --text: #d1fae5;
+            --text-muted: #6ee7b7;
+            --text-heading: #ecfdf5;
+            --accent: #10b981;
+            --accent-bg: rgba(16, 185, 129, 0.1);
+            --accent-border: rgba(16, 185, 129, 0.2);
+            --accent-hover: #059669;
+            --icon-bg: rgba(6, 78, 59, 0.5);
+            --icon-border: rgba(4, 120, 87, 0.5);
+            --online: #34d399;
+            --offline: #6b7280;
+        }
+
+        [data-theme="violet"] {
+            --bg: #1e1b4b;
+            --bg-card: #312e81;
+            --bg-card-inner: #1e1b4b;
+            --border: #4338ca;
+            --border-hover: #4f46e5;
+            --text: #e0e7ff;
+            --text-muted: #a5b4fc;
+            --text-heading: #eef2ff;
+            --accent: #818cf8;
+            --accent-bg: rgba(99, 102, 241, 0.15);
+            --accent-border: rgba(99, 102, 241, 0.25);
+            --accent-hover: #6366f1;
+            --icon-bg: rgba(49, 46, 129, 0.5);
+            --icon-border: rgba(67, 56, 202, 0.5);
+            --online: #a78bfa;
+            --offline: #6b7280;
+        }
+
+        [data-theme="rose"] {
+            --bg: #1c1917;
+            --bg-card: #292524;
+            --bg-card-inner: #1c1917;
+            --border: #44403c;
+            --border-hover: #57534e;
+            --text: #fef2f2;
+            --text-muted: #fecaca;
+            --text-heading: #fff1f2;
+            --accent: #f43f5e;
+            --accent-bg: rgba(244, 63, 94, 0.1);
+            --accent-border: rgba(244, 63, 94, 0.2);
+            --accent-hover: #e11d48;
+            --icon-bg: rgba(68, 64, 60, 0.5);
+            --icon-border: rgba(87, 83, 78, 0.5);
+            --online: #34d399;
+            --offline: #6b7280;
+        }
+
+        [data-theme="light"] {
+            --bg: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-card-inner: #f1f5f9;
+            --border: #e2e8f0;
+            --border-hover: #cbd5e1;
+            --text: #334155;
+            --text-muted: #64748b;
+            --text-heading: #0f172a;
+            --accent: #0ea5e9;
+            --accent-bg: rgba(14, 165, 233, 0.08);
+            --accent-border: rgba(14, 165, 233, 0.15);
+            --accent-hover: #0284c7;
+            --icon-bg: #f1f5f9;
+            --icon-border: #e2e8f0;
+            --online: #16a34a;
+            --offline: #94a3b8;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+        }
+
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
         .toast-enter { opacity: 0; transform: translateX(-50%) translateY(20px); }
         .toast-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        /* Status pulse animation for online hosts */
+        .status-online { animation: pulse-green 2s ease-in-out infinite; }
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center py-10 px-4 relative bg-slate-900">
+<body class="min-h-screen flex flex-col items-center py-10 px-4">
 
     <div class="w-full max-w-6xl mt-4 pb-20">
-        <header class="flex justify-between items-center mb-10 px-2">
+        <!-- Header -->
+        <header class="flex flex-wrap justify-between items-center gap-4 mb-10 px-2">
             <div>
-                <h1 class="text-3xl font-bold text-white flex items-center gap-3">
-                    <span class="bg-sky-500/10 text-sky-400 p-2 rounded-xl border border-sky-500/20"><i class="ph ph-lightning"></i></span>
+                <h1 class="text-3xl font-bold flex items-center gap-3" style="color: var(--text-heading)">
+                    <span class="p-2 rounded-xl border" style="background: var(--accent-bg); color: var(--accent); border-color: var(--accent-border);">
+                        <i class="ph ph-lightning"></i>
+                    </span>
                     Network Wake
                 </h1>
-                <p class="text-slate-400 text-sm mt-2 ml-1">Dashboard</p>
+                <p class="text-sm mt-2 ml-1" style="color: var(--text-muted)">Dashboard <span id="version-tag" class="text-xs opacity-60">v2</span></p>
             </div>
-            <button onclick="loadHosts()" class="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 transition-colors border border-slate-700 shadow-lg">
-                <i class="ph ph-arrow-clockwise text-xl" id="refresh-icon"></i>
-            </button>
+
+            <div class="flex items-center gap-3">
+                <!-- Theme Selector -->
+                <div class="relative">
+                    <select id="theme-select"
+                        class="appearance-none py-2.5 pl-4 pr-10 rounded-xl text-sm font-medium cursor-pointer transition-colors"
+                        style="background: var(--bg-card); color: var(--text); border: 1px solid var(--border);"
+                        onchange="setTheme(this.value)">
+                        <option value="slate">🌙 Slate Dark</option>
+                        <option value="emerald">🌿 Emerald Dark</option>
+                        <option value="violet">💜 Violet Dark</option>
+                        <option value="rose">🌹 Rose Dark</option>
+                        <option value="light">☀️ Light</option>
+                    </select>
+                    <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-sm pointer-events-none" style="color: var(--text-muted)"></i>
+                </div>
+
+                <!-- Refresh Button -->
+                <button onclick="loadHosts()" class="p-3 rounded-xl transition-colors border shadow-lg"
+                    style="background: var(--bg-card); color: var(--accent); border-color: var(--border);">
+                    <i class="ph ph-arrow-clockwise text-xl" id="refresh-icon"></i>
+                </button>
+            </div>
         </header>
 
+        <!-- Last Updated + Auto-Refresh indicator -->
+        <div class="flex items-center justify-between px-2 mb-6">
+            <p class="text-xs" style="color: var(--text-muted)" id="last-updated"></p>
+            <p class="text-xs flex items-center gap-1" style="color: var(--text-muted)" id="status-indicator">
+                <span class="w-2 h-2 rounded-full" style="background: var(--offline)"></span>
+                status idle
+            </p>
+        </div>
+
+        <!-- Host Grid -->
         <div id="host-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Loader -->
-            <div class="col-span-1 md:col-span-2 lg:col-span-3 flex justify-center py-20 text-slate-500">
+            <div class="col-span-1 md:col-span-2 lg:col-span-3 flex justify-center py-20" style="color: var(--text-muted)">
                 <i class="ph ph-spinner spin text-3xl"></i>
             </div>
         </div>
     </div>
 
-    <!-- Floating Toast Notification -->
+    <!-- Floating Toast -->
     <div id="status-msg" class="fixed bottom-8 left-1/2 z-50 min-w-[320px] max-w-[90%] p-4 rounded-xl shadow-2xl text-center text-sm font-bold border backdrop-blur-xl transition-all duration-300 toast-enter pointer-events-none"></div>
 
     <script>
+        // ── State ──
         const grid = document.getElementById('host-grid');
         const statusMsg = document.getElementById('status-msg');
         const refreshIcon = document.getElementById('refresh-icon');
+        let hosts = [];
+        let statusCheckInterval = null;
 
-        function escapeHtml(text) {
-            if (text == null) return '';
-            return String(text)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+        // ── Theme ──
+        function getTheme() { return localStorage.getItem('opnsense-wol-theme') || 'slate'; }
+        function setTheme(name) {
+            localStorage.setItem('opnsense-wol-theme', name);
+            document.documentElement.setAttribute('data-theme', name);
+            document.getElementById('theme-select').value = name;
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            document.documentElement.setAttribute('data-theme', getTheme());
+            document.getElementById('theme-select').value = getTheme();
+        });
+
+        // ── Wake History ──
+        function getWakeHistory() {
+            try { return JSON.parse(localStorage.getItem('opnsense-wol-wake-history') || '{}'); }
+            catch { return {}; }
+        }
+        function recordWake(uuid, descr) {
+            const history = getWakeHistory();
+            history[uuid] = { descr, time: Date.now() };
+            localStorage.setItem('opnsense-wol-wake-history', JSON.stringify(history));
+        }
+        function getLastWake(uuid) {
+            const history = getWakeHistory();
+            const entry = history[uuid];
+            if (!entry) return null;
+            const delta = Date.now() - entry.time;
+            if (delta < 60000) return '<1m ago';
+            if (delta < 3600000) return `${Math.floor(delta / 60000)}m ago`;
+            if (delta < 86400000) return `${Math.floor(delta / 3600000)}h ago`;
+            return `${Math.floor(delta / 86400000)}d ago`;
         }
 
+        // ── Sanitize ──
+        function esc(text) {
+            if (text == null) return '';
+            return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        // ── Load Hosts ──
         async function loadHosts() {
             refreshIcon.classList.add('spin');
-            grid.style.opacity = '0.5';
-            
+            grid.style.opacity = '0.6';
+
             try {
                 const res = await fetch('/api/hosts');
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const hosts = await res.json();
-                renderHosts(hosts);
+                hosts = await res.json();
+
+                const now = new Date();
+                document.getElementById('last-updated').textContent =
+                    `Updated ${now.toLocaleTimeString()}`;
+
+                // Load statuses
+                await loadStatuses();
+                renderHosts();
             } catch (err) {
                 console.error(err);
                 grid.innerHTML = `
-                    <div class="col-span-1 md:col-span-2 lg:col-span-3 text-center p-8 border border-red-900/50 bg-red-900/20 rounded-3xl">
-                        <i class="ph ph-warning-circle text-4xl text-red-400 mb-2"></i>
-                        <p class="text-red-400 font-bold text-lg">Connection Failed</p>
-                        <p class="text-red-300/60 text-sm mt-1">Could not reach OPNsense API.</p>
+                    <div class="col-span-1 md:col-span-2 lg:col-span-3 text-center p-8 border rounded-3xl"
+                        style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
+                        <i class="ph ph-warning-circle text-4xl mb-2" style="color: #ef4444"></i>
+                        <p class="font-bold text-lg" style="color: #fca5a5">Connection Failed</p>
+                        <p class="text-sm mt-1" style="color: rgba(252, 165, 165, 0.6)">Could not reach OPNsense API.</p>
                     </div>`;
             } finally {
                 refreshIcon.classList.remove('spin');
@@ -79,100 +267,160 @@
             }
         }
 
-        function renderHosts(hosts) {
+        // ── Load Statuses ──
+        async function loadStatuses() {
+            try {
+                const res = await fetch('/api/status');
+                if (!res.ok) return;
+                const statuses = await res.json();
+
+                // Merge statuses into hosts
+                for (const host of hosts) {
+                    const descr = host.descr || '';
+                    if (statuses[descr] !== undefined) {
+                        host._online = statuses[descr].online;
+                    } else {
+                        host._online = null; // unknown
+                    }
+                }
+
+                // Update status indicator
+                const online = hosts.filter(h => h._online === true).length;
+                const total = hosts.filter(h => h._online !== null).length;
+                const indicator = document.getElementById('status-indicator');
+                if (total > 0) {
+                    const dot = indicator.querySelector('span');
+                    dot.style.background = online > 0 ? 'var(--online)' : 'var(--offline)';
+                    indicator.innerHTML = `<span class="w-2 h-2 rounded-full ${online > 0 ? 'status-online' : ''}" style="background: ${online > 0 ? 'var(--online)' : 'var(--offline)'}"></span> ${online}/${total} online`;
+                }
+            } catch {
+                // Status endpoint not configured — no hosts to check
+                document.getElementById('status-indicator').textContent = '';
+            }
+        }
+
+        // ── Render Hosts ──
+        function renderHosts() {
             if (!Array.isArray(hosts) || hosts.length === 0) {
-                grid.innerHTML = `<div class="col-span-1 md:col-span-2 lg:col-span-3 text-center text-slate-500 py-20">No WOL hosts configured in OPNsense.</div>`;
+                grid.innerHTML = `<div class="col-span-1 md:col-span-2 lg:col-span-3 text-center py-20" style="color: var(--text-muted)">No WOL hosts configured in OPNsense.</div>`;
                 return;
             }
 
             grid.innerHTML = hosts.map(host => {
-                const descr = escapeHtml(host.descr || 'Unknown Host');
-                const iface = escapeHtml(host['%interface'] || host.interface || 'Unknown');
-                const mac = escapeHtml((host.mac || '').toUpperCase());
-                const uuid = escapeHtml(host.uuid);
+                const descr = esc(host.descr || 'Unknown Host');
+                const iface = esc(host.interface || host['%interface'] || 'Unknown');
+                const mac = esc((host.mac || '').toUpperCase());
+                const uuid = esc(host.uuid);
+                const lastWake = getLastWake(uuid);
+
+                // Status dot
+                let statusDot = '';
+                if (host._online === true) {
+                    statusDot = `<span class="w-2.5 h-2.5 rounded-full status-online flex-shrink-0" style="background: var(--online)" title="Online"></span>`;
+                } else if (host._online === false) {
+                    statusDot = `<span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background: var(--offline)" title="Offline"></span>`;
+                }
 
                 return `
-                <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-xl flex flex-col gap-5 hover:border-slate-600 transition-colors">
-                    
-                    <!-- Header Section -->
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-slate-700/50 rounded-xl text-sky-400 border border-slate-600/50 shrink-0">
-                            <i class="ph ph-desktop-tower text-2xl"></i>
+                <div class="fade-in rounded-2xl p-5 border shadow-xl flex flex-col gap-4 transition-colors"
+                    style="background: var(--bg-card); border-color: var(--border);"
+                    onmouseenter="this.style.borderColor='var(--border-hover)'"
+                    onmouseleave="this.style.borderColor='var(--border)'">
+
+                    <!-- Header -->
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 rounded-xl border shrink-0" style="background: var(--icon-bg); color: var(--accent); border-color: var(--icon-border)">
+                            <i class="ph ph-desktop-tower text-xl"></i>
                         </div>
-                        <div class="flex flex-col overflow-hidden">
-                            <h3 class="font-bold text-lg text-white truncate leading-tight" title="${descr}">${descr}</h3>
-                            <div class="flex items-center gap-1.5 text-xs font-medium text-slate-400 mt-0.5">
-                                <i class="ph ph-network text-sky-500"></i>
-                                <span class="uppercase tracking-wider font-bold text-slate-500">${iface}</span>
+                        <div class="flex flex-col overflow-hidden min-w-0">
+                            <div class="flex items-center gap-2">
+                                ${statusDot}
+                                <h3 class="font-bold text-lg truncate leading-tight" style="color: var(--text-heading)" title="${descr}">${descr}</h3>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-xs font-medium mt-0.5" style="color: var(--text-muted)">
+                                <i class="ph ph-network" style="color: var(--accent)"></i>
+                                <span class="uppercase tracking-wider font-bold opacity-60">${iface}</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tech Details Box -->
-                    <div class="bg-slate-900/80 rounded-lg p-3 border border-slate-700/50 flex flex-col gap-1.5 shadow-inner">
+                    <!-- Details -->
+                    <div class="rounded-lg p-3 border flex flex-col gap-1.5" style="background: var(--bg-card-inner); border-color: var(--border)">
                         <div class="flex justify-between items-center text-xs">
-                            <span class="text-slate-500 font-medium">MAC</span>
-                            <span class="font-mono text-slate-300 tracking-wide select-all">${mac}</span>
+                            <span class="font-medium" style="color: var(--text-muted)">MAC</span>
+                            <span class="font-mono tracking-wide select-all" style="color: var(--text)">${mac}</span>
                         </div>
+                        ${lastWake ? `
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-medium" style="color: var(--text-muted)">Last Wake</span>
+                            <span style="color: var(--text)">${lastWake}</span>
+                        </div>` : ''}
                     </div>
 
-                    <!-- Wide Wake Button -->
+                    <!-- Wake Button -->
                     <button data-uuid="${uuid}" data-descr="${descr}"
-                        class="mt-auto w-full bg-sky-600 hover:bg-sky-500 active:bg-sky-400 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-sky-900/20 hover:shadow-sky-500/20 transition-all flex items-center justify-center gap-2 group transform active:scale-[0.98]">
+                        class="mt-auto w-full font-bold py-3 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 group transform active:scale-[0.98]"
+                        style="background: var(--accent); color: #fff;"
+                        onmouseenter="this.style.background='var(--accent-hover)'"
+                        onmouseleave="this.style.background='var(--accent)'">
                         <i class="ph ph-power text-lg font-bold"></i>
                         <span>Wake Host</span>
                     </button>
-
                 </div>
             `}).join('');
         }
 
-        // Event delegation for wake buttons
+        // ── Wake Host ──
         grid.addEventListener('click', (e) => {
             const btn = e.target.closest('button[data-uuid]');
-            if (btn) {
-                wakeHost(btn.dataset.uuid, btn.dataset.descr);
-            }
+            if (btn) wakeHost(btn.dataset.uuid, btn.dataset.descr);
         });
 
         async function wakeHost(uuid, name) {
-            showStatus(`Sending wake signal to ${name}...`, 'info');
+            showToast(`Sending wake signal to ${name}...`, 'info');
             try {
                 const res = await fetch(`/api/wake/${uuid}`, { method: 'POST' });
                 const data = await res.json();
-                
-                if (res.ok && (data.status === "OK" || data.result === "OK")) {
-                    showStatus(`${name} signal sent successfully!`, 'success');
+                if (res.ok && (data.status === 'OK' || data.result === 'OK')) {
+                    recordWake(uuid, name);
+                    showToast(`${name} — signal sent!`, 'success');
+                    // Re-render to update Last Wake
+                    setTimeout(() => loadHosts(), 500);
                 } else {
-                    showStatus(`Failed to wake ${name}.`, 'error');
+                    showToast(`Failed to wake ${name}.`, 'error');
                 }
-            } catch (err) {
-                showStatus(`Network error waking ${name}.`, 'error');
+            } catch {
+                showToast(`Network error waking ${name}.`, 'error');
             }
         }
 
-        let toastTimeout;
-
-        function showStatus(msg, type) {
-            clearTimeout(toastTimeout);
+        // ── Toast ──
+        let toastTimer;
+        function showToast(msg, type) {
+            clearTimeout(toastTimer);
             statusMsg.textContent = msg;
-            
-            const baseClasses = "fixed bottom-8 left-1/2 z-50 min-w-[320px] max-w-[90%] p-4 rounded-xl shadow-2xl text-center text-sm font-bold border backdrop-blur-xl transition-all duration-300 toast-visible";
 
-            const styles = {
-                'success': 'bg-emerald-900/90 text-emerald-300 border-emerald-500/50 shadow-emerald-900/40',
-                'error': 'bg-red-900/90 text-red-300 border-red-500/50 shadow-red-900/40',
-                'info': 'bg-slate-800/90 text-sky-300 border-sky-500/50 shadow-sky-900/40'
+            const colors = {
+                success: { bg: 'var(--toast-success)', text: '#6ee7b7', border: 'rgba(52, 211, 153, 0.4)' },
+                error:   { bg: 'var(--toast-error)',   text: '#fca5a5', border: 'rgba(239, 68, 68, 0.4)' },
+                info:    { bg: 'var(--toast-info)',    text: '#7dd3fc', border: 'rgba(14, 165, 233, 0.4)' }
             };
-            
-            statusMsg.className = `${baseClasses} ${styles[type] || styles.info}`;
-            
-            toastTimeout = setTimeout(() => {
-                statusMsg.className = "fixed bottom-8 left-1/2 z-50 min-w-[320px] max-w-[90%] p-4 rounded-xl shadow-2xl text-center text-sm font-bold border backdrop-blur-xl transition-all duration-300 toast-enter pointer-events-none";
-            }, 3000);
+            const c = colors[type] || colors.info;
+
+            statusMsg.className = 'fixed bottom-8 left-1/2 z-50 min-w-[320px] max-w-[90%] p-4 rounded-xl shadow-2xl text-center text-sm font-bold border backdrop-blur-xl transition-all duration-300 toast-visible';
+            Object.assign(statusMsg.style, {
+                background: c.bg, color: c.text, borderColor: c.border
+            });
+
+            toastTimer = setTimeout(() => {
+                statusMsg.className = 'fixed bottom-8 left-1/2 z-50 min-w-[320px] max-w-[90%] p-4 rounded-xl shadow-2xl text-center text-sm font-bold border backdrop-blur-xl transition-all duration-300 toast-enter pointer-events-none';
+            }, 3500);
         }
 
+        // ── Init ──
         loadHosts();
+        // Auto-refresh host list + status every 30s
+        statusCheckInterval = setInterval(loadHosts, 30000);
     </script>
 </body>
 </html>
