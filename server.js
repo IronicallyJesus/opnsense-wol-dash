@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 3000;
 const OPNSENSE_URL = process.env.OPNSENSE_URL;
 const API_KEY = process.env.OPNSENSE_API_KEY;
 const API_SECRET = process.env.OPNSENSE_API_SECRET;
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 // Parse HOST_IPS env var — maps host descriptions to IPs for status checks
 // Format: '{"My Desktop":"192.168.1.100","NAS":"192.168.1.200"}'
@@ -25,12 +26,58 @@ try {
 app.use(express.json());
 app.use(express.static('public'));
 
-// HTTPS Agent
+// ── Demo Mode: Mock Data ──
+const DEMO_HOSTS = [
+  {
+    uuid: 'demo-uuid-1',
+    descr: 'Office Desktop',
+    mac: 'aa:bb:cc:11:22:33',
+    interface: 'lan',
+    '%interface': 'lan'
+  },
+  {
+    uuid: 'demo-uuid-2',
+    descr: 'Living Room HTPC',
+    mac: 'aa:bb:cc:44:55:66',
+    interface: 'lan',
+    '%interface': 'lan'
+  },
+  {
+    uuid: 'demo-uuid-3',
+    descr: 'NAS Server',
+    mac: 'aa:bb:cc:77:88:99',
+    interface: 'lan',
+    '%interface': 'lan'
+  },
+  {
+    uuid: 'demo-uuid-4',
+    descr: 'Printer',
+    mac: 'aa:bb:cc:aa:bb:cc',
+    interface: 'opt1',
+    '%interface': 'opt1'
+  },
+  {
+    uuid: 'demo-uuid-5',
+    descr: 'Garage Workstation',
+    mac: 'aa:bb:cc:dd:ee:ff',
+    interface: 'lan',
+    '%interface': 'lan'
+  },
+  {
+    uuid: 'demo-uuid-6',
+    descr: 'Media Server',
+    mac: '11:22:33:44:55:66',
+    interface: 'lan',
+    '%interface': 'lan'
+  }
+];
+
+// HTTPS Agent (only needed when not in demo mode)
 const httpsAgent = new https.Agent({
   rejectUnauthorized: process.env.VERIFY_SSL === 'true'
 });
 
-// Axios Client
+// Axios Client (only used when not in demo mode)
 const client = axios.create({
   baseURL: OPNSENSE_URL,
   auth: {
@@ -41,8 +88,12 @@ const client = axios.create({
   headers: { 'Content-Type': 'application/json' }
 });
 
-// API: Get Hosts — returns WOL hosts from OPNsense
+// API: Get Hosts — returns WOL hosts from OPNsense (or demo data)
 app.get('/api/hosts', async (req, res) => {
+  if (DEMO_MODE) {
+    return res.json(DEMO_HOSTS);
+  }
+
   if (!API_KEY || !API_SECRET || !OPNSENSE_URL) {
     return res.status(500).json({ error: 'Missing OPNsense configuration env vars.' });
   }
@@ -64,6 +115,13 @@ app.get('/api/hosts', async (req, res) => {
 // API: Wake Host
 app.post('/api/wake/:uuid', async (req, res) => {
   const { uuid } = req.params;
+
+  if (DEMO_MODE) {
+    // Simulate a brief delay, then return success
+    await new Promise(r => setTimeout(r, 400));
+    return res.json({ status: 'OK', result: 'OK' });
+  }
+
   try {
     const response = await client.post('/api/wol/wol/set', { uuid });
     res.json(response.data);
@@ -73,28 +131,42 @@ app.post('/api/wake/:uuid', async (req, res) => {
   }
 });
 
-// API: Host Status — ping each host to check online/offline
+// API: Host Status — ping each host to check online/offline (or demo data)
 app.get('/api/status', async (req, res) => {
-  const statuses = {};
+  if (DEMO_MODE) {
+    // Return a realistic mix: some online, some offline, one unknown
+    return res.json({
+      'Office Desktop': { online: true },
+      'Living Room HTPC': { online: true },
+      'NAS Server': { online: false },
+      'Printer': { online: true },
+      'Garage Workstation': { online: false },
+      'Media Server': { online: true }
+    });
+  }
 
+  const statuses = {};
   for (const [descr, ip] of Object.entries(HOST_IPS)) {
     try {
-      // Single ping with 1s timeout — fast enough for a dashboard
       execSync(`ping -c 1 -W 1 ${ip}`, { timeout: 2000, stdio: 'pipe' });
       statuses[descr] = { online: true };
     } catch {
       statuses[descr] = { online: false };
     }
   }
-
   res.json(statuses);
 });
 
 app.get('/health', (req, res) => res.send('OK'));
 
 app.listen(PORT, () => {
-  console.log(`OPNsense WOL v2 running on port ${PORT}`);
-  if (Object.keys(HOST_IPS).length > 0) {
-    console.log(`Status checks enabled for ${Object.keys(HOST_IPS).length} host(s)`);
+  if (DEMO_MODE) {
+    console.log(`OPNsense WOL v2 DEMO running on http://localhost:${PORT}`);
+    console.log(`Serving ${DEMO_HOSTS.length} mock hosts — no OPNsense connection needed`);
+  } else {
+    console.log(`OPNsense WOL v2 running on port ${PORT}`);
+    if (Object.keys(HOST_IPS).length > 0) {
+      console.log(`Status checks enabled for ${Object.keys(HOST_IPS).length} host(s)`);
+    }
   }
 });
