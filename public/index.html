@@ -189,7 +189,7 @@
         const grid = document.getElementById('host-grid');
         const statusMsg = document.getElementById('status-msg');
         let hosts = [];
-        let statusCheckInterval = null;
+        let refreshInterval = null;
 
         // ── Theme ──
         function getTheme() { return localStorage.getItem('opnsense-wol-theme') || 'slate'; }

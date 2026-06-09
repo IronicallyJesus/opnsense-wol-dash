@@ -1,9 +1,6 @@
 const express = require('express');
 const axios = require('axios');
 const https = require('https');
-const { exec: execCb } = require('child_process');
-const util = require('util');
-const execAsync = util.promisify(execCb);
 const app = express();
 
 // Configuration
@@ -12,29 +9,6 @@ const OPNSENSE_URL = process.env.OPNSENSE_URL;
 const API_KEY = process.env.OPNSENSE_API_KEY;
 const API_SECRET = process.env.OPNSENSE_API_SECRET;
 const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-// Parse HOST_IPS env var — maps host descriptions to IPs for status checks
-// Format: '{"My Desktop":"192.168.1.100","NAS":"192.168.1.200"}'
-let HOST_IPS = {};
-try {
-  if (process.env.HOST_IPS) {
-    HOST_IPS = JSON.parse(process.env.HOST_IPS);
-  }
-} catch (e) {
-  console.warn('Failed to parse HOST_IPS env var:', e.message);
-}
-
-// Parse INTERFACE_MAP env var — maps OPNsense port names to friendly labels
-// OPNsense WOL hosts use port-based names like "LAN", "OPT1", "OPT2", "OPT3", etc.
-// Format: '{"OPT2":"HSD","OPT3":"IOT","LAN":"MGMT"}'
-let INTERFACE_MAP = {};
-try {
-  if (process.env.INTERFACE_MAP) {
-    INTERFACE_MAP = JSON.parse(process.env.INTERFACE_MAP);
-  }
-} catch (e) {
-  console.warn('Failed to parse INTERFACE_MAP env var:', e.message);
-}
 
 // Middleware
 app.use(express.json());
@@ -46,53 +20,62 @@ const DEMO_HOSTS = [
     uuid: 'demo-uuid-1',
     descr: 'Office Desktop',
     mac: 'aa:bb:cc:11:22:33',
-    interface: 'lan',
-    '%interface': 'lan',
-    friendly_interface: 'LAN'
+    interface: 'opt2',
+    '%interface': 'HSD',
+    friendly_interface: 'HSD',
+    online: true,
+    ip: '10.13.10.50'
   },
   {
     uuid: 'demo-uuid-2',
     descr: 'Living Room HTPC',
     mac: 'aa:bb:cc:44:55:66',
-    interface: 'lan',
-    '%interface': 'lan',
-    friendly_interface: 'LAN'
+    interface: 'opt2',
+    '%interface': 'HSD',
+    friendly_interface: 'HSD',
+    online: false
   },
   {
     uuid: 'demo-uuid-3',
     descr: 'NAS Server',
     mac: 'aa:bb:cc:77:88:99',
-    interface: 'lan',
-    '%interface': 'lan',
-    friendly_interface: 'LAN'
+    interface: 'opt4',
+    '%interface': 'SVRS',
+    friendly_interface: 'SVRS',
+    online: true,
+    ip: '10.13.30.3'
   },
   {
     uuid: 'demo-uuid-4',
     descr: 'Printer',
     mac: 'aa:bb:cc:aa:bb:cc',
-    interface: 'opt1',
-    '%interface': 'opt1',
-    friendly_interface: 'IoT'
+    interface: 'opt3',
+    '%interface': 'IOT',
+    friendly_interface: 'IOT',
+    online: true,
+    ip: '10.13.40.100'
   },
   {
     uuid: 'demo-uuid-5',
     descr: 'Garage Workstation',
     mac: 'aa:bb:cc:dd:ee:ff',
-    interface: 'lan',
-    '%interface': 'lan',
-    friendly_interface: 'LAN'
+    interface: 'opt2',
+    '%interface': 'HSD',
+    friendly_interface: 'HSD',
+    online: false
   },
   {
     uuid: 'demo-uuid-6',
     descr: 'Media Server',
     mac: '11:22:33:44:55:66',
-    interface: 'lan',
-    '%interface': 'lan',
-    friendly_interface: 'LAN'
+    interface: 'opt5',
+    '%interface': 'GUEST',
+    friendly_interface: 'GUEST',
+    online: false
   }
 ];
 
-// HTTPS Agent (only needed when not in demo mode)
+// HTTPS Agent
 const httpsAgent = new https.Agent({
   rejectUnauthorized: process.env.VERIFY_SSL === 'true'
 });
@@ -108,7 +91,30 @@ const client = axios.create({
   headers: { 'Content-Type': 'application/json' }
 });
 
-// API: Get Hosts — returns WOL hosts from OPNsense (or demo data)
+// Build ARP lookup: mac -> { ip, intf, intf_desc }
+async function fetchArpTable() {
+  try {
+    const resp = await client.get('/api/diagnostics/interface/getArp');
+    const entries = Array.isArray(resp.data) ? resp.data : (resp.data.data || []);
+    const lookup = {};
+    for (const e of entries) {
+      const mac = (e.mac || '').toLowerCase().trim();
+      if (mac) {
+        lookup[mac] = {
+          ip: e.ip || '',
+          intf: e.intf || '',
+          intf_desc: e.intf_description || ''
+        };
+      }
+    }
+    return lookup;
+  } catch (error) {
+    console.error('Error fetching ARP table:', error.message);
+    return {};
+  }
+}
+
+// API: Get Hosts — returns WOL hosts with friendly interface names + online status
 app.get('/api/hosts', async (req, res) => {
   if (DEMO_MODE) {
     return res.json(DEMO_HOSTS);
@@ -119,18 +125,37 @@ app.get('/api/hosts', async (req, res) => {
   }
 
   try {
-    const response = await client.post('/api/wol/wol/searchHost', {
-      current: 1,
-      rowCount: 1000,
-      sort: {},
-      searchPhrase: ''
-    });
-    const hosts = response.data.rows || [];
-    // Apply interface name mapping
+    // Fetch hosts + ARP in parallel
+    const [hostRes, arpTable] = await Promise.all([
+      client.post('/api/wol/wol/searchHost', {
+        current: 1,
+        rowCount: 1000,
+        sort: {},
+        searchPhrase: ''
+      }),
+      fetchArpTable()
+    ]);
+
+    const hosts = hostRes.data.rows || [];
+
     for (const host of hosts) {
-      const rawIface = host.interface || host['%interface'] || '';
-      host.friendly_interface = INTERFACE_MAP[rawIface] || rawIface;
+      const mac = (host.mac || '').toLowerCase().trim();
+      const arpEntry = arpTable[mac];
+
+      // Friendly interface name from %interface field (already a description like "HSD")
+      host.friendly_interface = host['%interface'] || host.interface || 'Unknown';
+
+      // Online status from ARP table (MAC entry exists)
+      host.online = !!arpEntry;
+
+      // Include IP if available
+      if (arpEntry) {
+        host.ip = arpEntry.ip;
+      } else {
+        host.ip = '';
+      }
     }
+
     res.json(hosts);
   } catch (error) {
     console.error('Error fetching hosts:', error.message);
@@ -143,7 +168,6 @@ app.post('/api/wake/:uuid', async (req, res) => {
   const { uuid } = req.params;
 
   if (DEMO_MODE) {
-    // Simulate a brief delay, then return success
     await new Promise(r => setTimeout(r, 400));
     return res.json({ status: 'OK', result: 'OK' });
   }
@@ -157,7 +181,7 @@ app.post('/api/wake/:uuid', async (req, res) => {
   }
 });
 
-// API: Wake All Hosts — sends WOL to every host at once
+// API: Wake All Hosts
 app.post('/api/wake-all', async (req, res) => {
   if (DEMO_MODE) {
     await new Promise(r => setTimeout(r, 800));
@@ -189,50 +213,16 @@ app.post('/api/wake-all', async (req, res) => {
   }
 });
 
-// API: Host Status — parallel ping each host to check online/offline (or demo data)
-app.get('/api/status', async (req, res) => {
-  if (DEMO_MODE) {
-    // Randomize online/offline per request for realistic demo behavior
-    const statuses = {};
-    for (const host of DEMO_HOSTS) {
-      // 60% chance online, 40% offline — varied enough to be interesting
-      statuses[host.descr] = { online: Math.random() < 0.6 };
-    }
-    return res.json(statuses);
-  }
-
-  // Parallel pings — all fire simultaneously, results as they come
-  const entries = Object.entries(HOST_IPS);
-  const results = await Promise.allSettled(
-    entries.map(async ([descr, ip]) => {
-      try {
-        await execAsync(`ping -c 1 -W 1 ${ip.replace(/[^0-9.:]/g, '')}`, { timeout: 2000 });
-        return [descr, { online: true }];
-      } catch {
-        return [descr, { online: false }];
-      }
-    })
-  );
-  const statuses = {};
-  for (const r of results) {
-    if (r.status === 'fulfilled') {
-      const [descr, st] = r.value;
-      statuses[descr] = st;
-    }
-  }
-  res.json(statuses);
-});
-
 app.get('/health', (req, res) => res.send('OK'));
 
 app.listen(PORT, async () => {
   if (DEMO_MODE) {
-    console.log(`OPNsense WOL v2 DEMO running on http://localhost:${PORT}`);
-    console.log(`Serving ${DEMO_HOSTS.length} mock hosts — no OPNsense connection needed`);
+    console.log(`OPNsense WOL v3 DEMO running on http://localhost:${PORT}`);
+    console.log(`Serving ${DEMO_HOSTS.length} mock hosts with status via ARP simulation`);
   } else {
-    console.log(`OPNsense WOL v2 running on port ${PORT}`);
-    if (Object.keys(HOST_IPS).length > 0) {
-      console.log(`Status checks enabled for ${Object.keys(HOST_IPS).length} host(s)`);
+    console.log(`OPNsense WOL v3 running on port ${PORT}`);
+    if (API_KEY) {
+      console.log('OPNsense API connected — status via ARP table, interface names via %interface');
     }
   }
 });

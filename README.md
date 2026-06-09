@@ -1,60 +1,75 @@
-# OPNsense WOL v2
+# OPNsense WOL v3
 
 ![Wake-on-LAN Dashboard](./screenshot.png)
 
-A lightweight web dashboard for waking devices on your network through the OPNsense WOL plugin API. v2 adds real-time host status checks, a theme selector, and wake history. Built with Express.js and Tailwind CSS.
+A lightweight web dashboard for waking devices on your network through the OPNsense WOL plugin API. v3 replaces ping-based status checks with OPNsense ARP table lookups — no `HOST_IPS` or `INTERFACE_MAP` needed. Built with Express.js and Tailwind CSS.
 
-## What's New in v2
+## What's New in v3
 
-- **Host Status** — Ping-based online/offline indicators with pulsing green dots. Map host names to IPs via `HOST_IPS` env var.
-- **Theme Selector** — 5 color themes (Slate Dark, Emerald Dark, Violet Dark, Rose Dark, Light) persisted to localStorage.
-- **Wake History** — Per-host last-wake timestamps with relative time display (stored in browser localStorage).
-- **Wake All** — One-click button to send magic packets to every host at once.
-- **Auto-Refresh** — Host list and status auto-refresh every 30 seconds.
-- **Online-First Sort** — Cards sort with online hosts first, then unknown, then offline.
-- **Improved UX** — Fade-in cards, hover transitions, cleaner toast notifications, status summary bar.
+- **ARP-Based Status** — Host online/offline is determined directly from the OPNsense ARP table (MAC-level presence). No IP mapping, no ping, no firewall rules.
+- **No INTERFACE_MAP** — Friendly interface names (e.g. "HSD", "SVRS") come directly from the OPNsense WOL API's `%interface` field — no manual mapping.
+- **No HOST_IPS** — Status works automatically for every WOL host, no IP configuration required.
+- **Parallel Data Loading** — Host list and ARP status fetch concurrently for faster page loads.
+- **Status Embedded in Hosts** — Online indicators are part of `/api/hosts` response — no separate `/api/status` call.
+- **Minimal Privileges** — Only 3 OPNsense API privileges needed: **WOL**, **Diagnostics: ARP Table**.
 
 ## Features
 
 | Feature | Description |
 |---|---|
-| **Host Discovery** | Fetches all WOL-configured hosts directly from OPNsense |
-| **One-Click Wake** | Sends magic packet via OPNsense API with toast confirmation |
-| **Wake All** | One-click button wakes every host at once |
-| **Host Status** | Optional ping-based online/offline checks with visual indicators |
-| **Theme Selector** | 5 preset color themes with localStorage persistence |
-| **Wake History** | Tracks when each host was last woken |
-| **Responsive Grid** | Card-based layout adapts from 1 to 3 columns |
-| **Auto-Refresh** | Polls OPNsense and pings hosts every 30 seconds |
-| **Sanitized Display** | Host descriptions and MAC addresses are HTML-escaped |
-| **Dockerized** | Production Docker build with Alpine Node.js |
-| **CI/CD** | Gitea Actions workflow builds and deploys on version tags |
+|| **Host Discovery** | Fetches all WOL-configured hosts directly from OPNsense |
+|| **One-Click Wake** | Sends magic packet via OPNsense API with toast confirmation |
+|| **Wake All** | One-click button wakes every host at once |
+|| **Host Status** | Real-time online indicators via OPNsense ARP table — MAC-level presence, no ping needed |
+|| **Theme Selector** | 5 preset color themes with localStorage persistence |
+|| **Wake History** | Tracks when each host was last woken |
+|| **Responsive Grid** | Card-based layout adapts from 1 to 3 columns |
+|| **Auto-Refresh** | Polls OPNsense and refreshes status every 30 seconds |
+|| **Sanitized Display** | Host descriptions and MAC addresses are HTML-escaped |
+|| **Dockerized** | Production Docker build with Alpine Node.js |
+|| **CI/CD** | Gitea Actions workflow builds and deploys on version tags |
 
 ## How It Works
 
 ```
-┌──────────┐     ┌───────────────────┐     ┌─────────────────┐     ┌──────────────┐
-│  Browser │────►│  Express Server   │────►│  OPNsense API    │     │  Your Hosts  │
-│ (UI)     │     │  (Node.js)        │     │  (WOL Plugin)    │     │  (ICMP Ping) │
-└──────────┘     └───────────────────┘     └─────────────────┘     └──────────────┘
-                       │                          │                       │
-                   GET /api/hosts           POST /api/wol/wol/      GET /api/status
-                   POST /api/wake/:uuid     searchHost               (ping checks)
-                   GET /api/status          POST /api/wol/wol/set
+┌──────────┐     ┌───────────────────┐     ┌──────────────────────────────┐
+│  Browser │────►│  Express Server   │────►│  OPNsense API                │
+│ (UI)     │     │  (Node.js)        │     │                              │
+└──────────┘     └───────────────────┘     │  GET /api/diagnostics/       │
+                       │                    │    interface/getArp          │
+                   GET /api/hosts           │    ─► status + IP            │
+                   POST /api/wake/:uuid     │                              │
+                   POST /api/wake-all       │  POST /api/wol/wol/          │
+                                            │    searchHost / set          │
+                                            └──────────────────────────────┘
 ```
 
-The Express server acts as a bridge between the browser and the OPNsense API:
+The Express server acts as a bridge between the browser and OPNsense:
 
-1. **List hosts** — queries OPNsense's `wol/searchHost` endpoint and returns raw host data
-2. **Wake host** — sends a magic packet via OPNsense's `wol/set` endpoint
-3. **Check status** — pings each configured host and returns online/offline state
+1. **List hosts** — queries OPNsense `wol/searchHost`, fetches ARP table in parallel, merges status + IP per MAC
+2. **Wake host** — sends magic packet via OPNsense `wol/set`
+3. **Status** — embedded in `/api/hosts` response via the ARP lookup — no separate status endpoint
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+
 - OPNsense with the **os-wol** plugin installed and API access enabled
-- OPNsense API key and secret
+- OPNsense API key with these privileges:
+  - **WOL** — required for `wol/searchHost` and `wol/set` endpoints
+  - **Diagnostics: ARP Table** — required for `diagnostics/interface/getArp` (host status checks)
+- Docker (optional, for containerized deployment)
+
+### OPNsense API Permissions
+
+When creating the API key in OPNsense (System → Access → Users → edit user → API keys), assign these privileges:
+
+| Privilege | Endpoint | Purpose |
+|---|---|---|
+| **WOL** | `/api/wol/wol/*` | List and wake hosts |
+| **Diagnostics: ARP Table** | `/api/diagnostics/interface/getArp` | Check host online status |
+
+That's it — no "All Pages" or other privileges needed.
 
 ### Configuration
 
@@ -67,47 +82,17 @@ The server is configured entirely through environment variables:
 | `OPNSENSE_API_SECRET` | ✅ | — | OPNsense API secret |
 | `PORT` | ❌ | `3000` | Server listen port |
 | `VERIFY_SSL` | ❌ | `false` | Set to `"true"` to verify SSL cert |
-| `HOST_IPS` | ❌ | `{}` | JSON map of host descriptions to IPs for status checks |
-| `INTERFACE_MAP` | ❌ | `{}` | JSON map of OPNsense port names (LAN, OPT1, OPT2…) to friendly labels |
 | `DEMO_MODE` | ❌ | `false` | Set to `"true"` to run with mock data — no OPNsense needed |
+
+> **Note on v2 → v3:** `HOST_IPS`, `INTERFACE_MAP`, and the separate `/api/status` endpoint are removed. Status and interface names come directly from OPNsense ARP + WOL APIs.
 
 ### Demo Mode
 
-Set `DEMO_MODE=true` to run a fully functional dashboard with 6 mock hosts (4 online, 2 offline) — no OPNsense connection required. Ideal for testing, development, or taking screenshots:
+Set `DEMO_MODE=true` to run a fully functional dashboard with 6 mock hosts (3 online, 3 offline) — no OPNsense connection required. Status is simulated using the ARP-response style baked into the demo data:
 
 ```sh
 DEMO_MODE=true node server.js
 # → http://localhost:3000
-```
-
-### INTERFACE_MAP
-
-To show friendly names instead of `OPT2`, `OPT3`, etc., set `INTERFACE_MAP` to a JSON object mapping OPNsense port names (the names shown in the WOL plugin interface column) to human-readable labels:
-
-```sh
-INTERFACE_MAP='{"OPT2":"HSD","OPT3":"IOT","LAN":"MGMT","OPT1":"WiFi"}'
-```
-
-Unmapped interfaces show their raw name. Docker equivalent:
-
-```yaml
-environment:
-  INTERFACE_MAP: '{"OPT2":"HSD","OPT3":"IOT","LAN":"MGMT","OPT1":"WiFi"}'
-```
-
-### HOST_IPS
-
-To enable host status checks, set `HOST_IPS` to a JSON object mapping host descriptions (exactly as they appear in OPNsense) to IP addresses:
-
-```sh
-HOST_IPS='{"My Desktop":"192.168.1.100","NAS":"192.168.1.200"}'
-```
-
-The server will ping each IP on every `/api/status` call. Hosts without an entry in `HOST_IPS` show no status indicator. Docker equivalent:
-
-```yaml
-environment:
-  HOST_IPS: '{"My Desktop":"192.168.1.100","NAS":"192.168.1.200"}'
 ```
 
 ### Development
@@ -120,11 +105,10 @@ npm install
 OPNSENSE_URL=https://opnsense.lan \
 OPNSENSE_API_KEY=your-key \
 OPNSENSE_API_SECRET=your-secret \
-HOST_IPS='{"My PC":"192.168.1.50","Server":"192.168.1.10"}' \
 node server.js
 ```
 
-Open `http://localhost:3000` to view the dashboard.
+Open `http://localhost:3000` to view the dashboard. Hosts will show online/offline status automatically via ARP.
 
 ### Docker
 
@@ -142,15 +126,14 @@ docker compose up -d
 
 # Run with real OPNsense (edit docker-compose.yml first)
 OPNSENSE_URL=https://opnsense.lan \
-OPNSENSE_API_KEY=your-key \
-OPNSENSE_API_SECRET=your-secret \
-HOST_IPS='{"My PC":"192.168.1.50"}' \
+OPNSENSE_API_KEY=*** \
+OPNSENSE_API_SECRET=*** \
 docker compose up -d
 ```
 
 Or edit `docker-compose.yml` directly to set environment variables for production.
 
-> **Note:** Docker containers need network access to ping local hosts. Use `--network host` or ensure the container can reach your LAN.
+> **Note:** Status is determined via OPNsense's ARP table (API), not ICMP — no special network config or host mode needed.
 
 ### Demo (no OPNsense required)
 
@@ -163,10 +146,9 @@ docker run -d -p 3000:3000 -e DEMO_MODE=true opnsense-wol
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/hosts` | List all WOL hosts from OPNsense |
+| `GET` | `/api/hosts` | List all WOL hosts from OPNsense with ARP-based online status + IP |
 | `POST` | `/api/wake/:uuid` | Send wake signal to a host by UUID |
 | `POST` | `/api/wake-all` | Send wake signal to all configured hosts |
-| `GET` | `/api/status` | Ping all configured hosts, returns `{descr: {online: bool}}` |
 | `GET` | `/health` | Health check endpoint |
 
 ## Themes
@@ -186,11 +168,12 @@ Your choice persists in localStorage across sessions.
 ## Project Structure
 
 ```
-├── server.js            # Express server (API proxy + status checks)
+├── server.js            # Express server (API proxy + ARP-based status)
 ├── public/
-│   └── index.html       # Frontend (Tailwind CSS via CDN, themes, status, wake history)
-├── Dockerfile           # Production build (Alpine Node.js, includes ping)
+│   └── index.html       # Frontend (Tailwind CSS via CDN, themes, wake history)
+├── Dockerfile           # Production build (Alpine Node.js)
 ├── docker-compose.yml   # One-command demo or production deployment
+├── .env.example         # Environment variable template
 ├── .dockerignore
 ├── package.json
 └── .gitea/workflows/    # CI/CD (Docker build + deploy on v* tags)

@@ -7,7 +7,6 @@ RUN npm ci --omit=dev
 # ── Runtime Stage ──
 FROM node:22-alpine
 WORKDIR /app
-RUN apk add --no-cache iputils  # provides ping for host status checks
 COPY --from=build /app/node_modules ./node_modules
 COPY server.js package.json ./
 COPY public/ ./public/

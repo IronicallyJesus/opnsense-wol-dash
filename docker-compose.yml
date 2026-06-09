@@ -12,6 +12,4 @@ services:
       # - OPNSENSE_API_KEY=your_api_key
       # - OPNSENSE_API_SECRET=your_api_secret
       # - VERIFY_SSL=false
-      # - HOST_IPS={"Office Desktop":"192.168.1.100","NAS":"192.168.1.200"}
-      # - INTERFACE_MAP={"OPT2":"HSD","OPT3":"IOT","LAN":"MGMT"}
     restart: unless-stopped
