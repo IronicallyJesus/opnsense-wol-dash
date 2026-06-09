@@ -13,4 +13,5 @@ services:
       # - OPNSENSE_API_SECRET=your_api_secret
       # - VERIFY_SSL=false
       # - HOST_IPS={"Office Desktop":"192.168.1.100","NAS":"192.168.1.200"}
+      # - INTERFACE_MAP={"opt3":"IoT VLAN","vlan0x0a":"VLAN 10 - Devices"}
     restart: unless-stopped

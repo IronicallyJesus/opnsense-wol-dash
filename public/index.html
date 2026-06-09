@@ -306,7 +306,7 @@
 
             grid.innerHTML = sorted.map(host => {
                 const descr = esc(host.descr || 'Unknown Host');
-                const iface = esc(host.interface || host['%interface'] || 'Unknown');
+                const iface = esc(host.friendly_interface || host.interface || host['%interface'] || 'Unknown');
                 const mac = esc((host.mac || '').toUpperCase());
                 const uuid = esc(host.uuid);
                 const lastWake = getLastWake(uuid);

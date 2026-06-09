@@ -22,6 +22,17 @@ try {
   console.warn('Failed to parse HOST_IPS env var:', e.message);
 }
 
+// Parse INTERFACE_MAP env var — maps raw OPNsense interface names to friendly labels
+// Format: '{"opt3":"IoT","vlan0x0a":"VLAN 10 - Devices","lan":"LAN"}'
+let INTERFACE_MAP = {};
+try {
+  if (process.env.INTERFACE_MAP) {
+    INTERFACE_MAP = JSON.parse(process.env.INTERFACE_MAP);
+  }
+} catch (e) {
+  console.warn('Failed to parse INTERFACE_MAP env var:', e.message);
+}
+
 // Middleware
 app.use(express.json());
 app.use(express.static('public'));
@@ -33,35 +44,40 @@ const DEMO_HOSTS = [
     descr: 'Office Desktop',
     mac: 'aa:bb:cc:11:22:33',
     interface: 'lan',
-    '%interface': 'lan'
+    '%interface': 'lan',
+    friendly_interface: 'LAN'
   },
   {
     uuid: 'demo-uuid-2',
     descr: 'Living Room HTPC',
     mac: 'aa:bb:cc:44:55:66',
     interface: 'lan',
-    '%interface': 'lan'
+    '%interface': 'lan',
+    friendly_interface: 'LAN'
   },
   {
     uuid: 'demo-uuid-3',
     descr: 'NAS Server',
     mac: 'aa:bb:cc:77:88:99',
     interface: 'lan',
-    '%interface': 'lan'
+    '%interface': 'lan',
+    friendly_interface: 'LAN'
   },
   {
     uuid: 'demo-uuid-4',
     descr: 'Printer',
     mac: 'aa:bb:cc:aa:bb:cc',
     interface: 'opt1',
-    '%interface': 'opt1'
+    '%interface': 'opt1',
+    friendly_interface: 'IoT'
   },
   {
     uuid: 'demo-uuid-5',
     descr: 'Garage Workstation',
     mac: 'aa:bb:cc:dd:ee:ff',
     interface: 'lan',
-    '%interface': 'lan'
+    '%interface': 'lan',
+    friendly_interface: 'LAN'
   },
   {
     uuid: 'demo-uuid-6',
@@ -105,7 +121,13 @@ app.get('/api/hosts', async (req, res) => {
       sort: {},
       searchPhrase: ''
     });
-    res.json(response.data.rows || []);
+    const hosts = response.data.rows || [];
+    // Apply interface name mapping
+    for (const host of hosts) {
+      const rawIface = host.interface || host['%interface'] || '';
+      host.friendly_interface = INTERFACE_MAP[rawIface] || rawIface;
+    }
+    res.json(hosts);
   } catch (error) {
     console.error('Error fetching hosts:', error.message);
     res.status(500).json({ error: 'Failed to connect to OPNsense API' });

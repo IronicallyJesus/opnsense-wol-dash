@@ -68,6 +68,7 @@ The server is configured entirely through environment variables:
 | `PORT` | ❌ | `3000` | Server listen port |
 | `VERIFY_SSL` | ❌ | `false` | Set to `"true"` to verify SSL cert |
 | `HOST_IPS` | ❌ | `{}` | JSON map of host descriptions to IPs for status checks |
+| `INTERFACE_MAP` | ❌ | `{}` | JSON map of raw OPNsense interface names to friendly labels |
 | `DEMO_MODE` | ❌ | `false` | Set to `"true"` to run with mock data — no OPNsense needed |
 
 ### Demo Mode
@@ -77,6 +78,21 @@ Set `DEMO_MODE=true` to run a fully functional dashboard with 6 mock hosts (4 on
 ```sh
 DEMO_MODE=true node server.js
 # → http://localhost:3000
+```
+
+### INTERFACE_MAP
+
+To show friendly names instead of `opt3`, `vlan0x0a`, etc., set `INTERFACE_MAP` to a JSON object mapping raw OPNsense interface names to human-readable labels:
+
+```sh
+INTERFACE_MAP='{"opt3":"IoT VLAN","vlan0x0a":"VLAN 10","lan":"LAN"}'
+```
+
+Unmapped interfaces show their raw name. Docker equivalent:
+
+```yaml
+environment:
+  INTERFACE_MAP: '{"opt3":"IoT VLAN","vlan0x0a":"VLAN 10","lan":"LAN"}'
 ```
 
 ### HOST_IPS
