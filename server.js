@@ -35,44 +35,22 @@ try {
   console.warn('Failed to parse INTERFACE_MAP env var:', e.message);
 }
 
-// Auto-discover interface descriptions from OPNsense API
-// Falls back gracefully if API permissions don't include this endpoint
+// Auto-discover interface descriptions from OPNsense ARP table
+// The ARP endpoint returns intf_description for every entry — no extra perms needed
 async function discoverInterfaces() {
   if (DEMO_MODE || !API_KEY || !API_SECRET || !OPNSENSE_URL) return;
   try {
-    const resp = await client.get('/api/diagnostics/interface/getInterfaceStatistics');
-    const data = resp.data;
-    // Response format: { rows: [{iface: "igc1", descr: "LAN", ...}, ...] }
-    // or: { statistics: { igc1: {display_name: "LAN", ...}, ... } }
+    const resp = await client.get('/api/diagnostics/interface/get_arp');
+    const arp = resp.data;
     const discovered = {};
-    if (data && typeof data === 'object') {
-      if (Array.isArray(data.rows)) {
-        for (const row of data.rows) {
-          if (row.iface && (row.descr || row.display_name)) {
-            discovered[row.iface] = (row.descr || row.display_name).trim();
-          }
-        }
-      } else if (data.statistics) {
-        for (const [_, info] of Object.entries(data.statistics)) {
-          if (info.iface && info.display_name) {
-            discovered[info.iface] = info.display_name.trim();
-          }
+    if (Array.isArray(arp)) {
+      for (const entry of arp) {
+        const iface = entry.intf;
+        const desc = entry.intf_description;
+        if (iface && desc && !discovered[iface]) {
+          discovered[iface] = desc.trim();
         }
       }
-    }
-    // Also try the interface names endpoint
-    if (Object.keys(discovered).length === 0) {
-      try {
-        const namesResp = await client.get('/api/diagnostics/interface/get_interface_names');
-        const names = namesResp.data;
-        if (names && typeof names === 'object') {
-          for (const [iface, descr] of Object.entries(names)) {
-            if (descr && typeof descr === 'string') {
-              discovered[iface] = descr.trim();
-            }
-          }
-        }
-      } catch { /* endpoint not available */ }
     }
     // Merge — discovered values don't override explicit env config
     for (const [iface, descr] of Object.entries(discovered)) {
@@ -82,15 +60,13 @@ async function discoverInterfaces() {
       }
     }
     if (Object.keys(discovered).length > 0) {
-      console.log(`Interface mapping: ${Object.keys(INTERFACE_MAP).length} entries (${Object.keys(discovered).length} auto-discovered)`);
+      console.log(`Interface mapping: ${Object.keys(INTERFACE_MAP).length} entries (${Object.keys(discovered).length} auto-discovered from ARP)`);
     }
   } catch (err) {
-    // 401/403/404 means the API key doesn't have the right permission — silent fallback
-    if (err.response && (err.response.status === 401 || err.response.status === 403 || err.response.status === 404)) {
-      console.log('OPNsense API: interface descriptions not available (permission required on API key)');
-      console.log('  → Use INTERFACE_MAP env var to set friendly names manually');
-    } else if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-      // OPNsense unreachable — also silent
+    if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND' || err.code === 'ETIMEDOUT') {
+      // OPNsense unreachable — silent
+    } else if (err.response && err.response.status === 401) {
+      console.log('OPNsense API: auth failed — cannot discover interfaces');
     } else {
       console.warn('Interface discovery error:', err.message);
     }
