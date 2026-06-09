@@ -93,7 +93,7 @@ const client = axios.create({
 // Build ARP lookup: mac -> { ip, intf, intf_desc }
 async function fetchArpTable() {
   try {
-    const resp = await client.get('/api/diagnostics/interface/getArp');
+    const resp = await client.get('/api/diagnostics/interface/get_arp');
     const entries = Array.isArray(resp.data) ? resp.data : (resp.data.data || []);
     const lookup = {};
     for (const e of entries) {

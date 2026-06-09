@@ -36,7 +36,7 @@ A lightweight web dashboard for waking devices on your network through the OPNse
 │  Browser │────►│  Express Server   │────►│  OPNsense API                │
 │ (UI)     │     │  (Node.js)        │     │                              │
 └──────────┘     └───────────────────┘     │  GET /api/diagnostics/       │
-                       │                    │    interface/getArp          │
+                       │                    │    interface/get_arp          │
                    GET /api/hosts           │    ─► status + IP            │
                    POST /api/wake/:uuid     │                              │
                    POST /api/wake-all       │  POST /api/wol/wol/          │
@@ -57,7 +57,7 @@ The Express server acts as a bridge between the browser and OPNsense:
 - OPNsense with the **os-wol** plugin installed and API access enabled
 - OPNsense API key with these privileges:
   - **WOL** — required for `wol/searchHost` and `wol/set` endpoints
-  - **Diagnostics: ARP Table** — required for `diagnostics/interface/getArp` (host status checks)
+  - **Diagnostics: ARP Table** — required for `diagnostics/interface/get_arp` (host status checks)
 - Docker (optional, for containerized deployment)
 
 ### OPNsense API Permissions
@@ -67,7 +67,7 @@ When creating the API key in OPNsense (System → Access → Users → edit user
 | Privilege | Endpoint | Purpose |
 |---|---|---|
 | **WOL** | `/api/wol/wol/*` | List and wake hosts |
-| **Diagnostics: ARP Table** | `/api/diagnostics/interface/getArp` | Check host online status |
+| **Diagnostics: ARP Table** | `/api/diagnostics/interface/get_arp` | Check host online status |
 
 That's it — no "All Pages" or other privileges needed.
 
