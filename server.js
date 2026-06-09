@@ -1,7 +1,9 @@
 const express = require('express');
 const axios = require('axios');
 const https = require('https');
-const { execSync } = require('child_process');
+const { exec: execCb } = require('child_process');
+const util = require('util');
+const execAsync = util.promisify(execCb);
 const app = express();
 
 // Configuration
@@ -31,6 +33,68 @@ try {
   }
 } catch (e) {
   console.warn('Failed to parse INTERFACE_MAP env var:', e.message);
+}
+
+// Auto-discover interface descriptions from OPNsense API
+// Falls back gracefully if API permissions don't include this endpoint
+async function discoverInterfaces() {
+  if (DEMO_MODE || !API_KEY || !API_SECRET || !OPNSENSE_URL) return;
+  try {
+    const resp = await client.get('/api/diagnostics/interface/getInterfaceStatistics');
+    const data = resp.data;
+    // Response format: { rows: [{iface: "igc1", descr: "LAN", ...}, ...] }
+    // or: { statistics: { igc1: {display_name: "LAN", ...}, ... } }
+    const discovered = {};
+    if (data && typeof data === 'object') {
+      if (Array.isArray(data.rows)) {
+        for (const row of data.rows) {
+          if (row.iface && (row.descr || row.display_name)) {
+            discovered[row.iface] = (row.descr || row.display_name).trim();
+          }
+        }
+      } else if (data.statistics) {
+        for (const [_, info] of Object.entries(data.statistics)) {
+          if (info.iface && info.display_name) {
+            discovered[info.iface] = info.display_name.trim();
+          }
+        }
+      }
+    }
+    // Also try the interface names endpoint
+    if (Object.keys(discovered).length === 0) {
+      try {
+        const namesResp = await client.get('/api/diagnostics/interface/get_interface_names');
+        const names = namesResp.data;
+        if (names && typeof names === 'object') {
+          for (const [iface, descr] of Object.entries(names)) {
+            if (descr && typeof descr === 'string') {
+              discovered[iface] = descr.trim();
+            }
+          }
+        }
+      } catch { /* endpoint not available */ }
+    }
+    // Merge — discovered values don't override explicit env config
+    for (const [iface, descr] of Object.entries(discovered)) {
+      if (!INTERFACE_MAP[iface]) {
+        INTERFACE_MAP[iface] = descr;
+        console.log(`  Auto-discovered interface: ${iface} → ${descr}`);
+      }
+    }
+    if (Object.keys(discovered).length > 0) {
+      console.log(`Interface mapping: ${Object.keys(INTERFACE_MAP).length} entries (${Object.keys(discovered).length} auto-discovered)`);
+    }
+  } catch (err) {
+    // 401/403/404 means the API key doesn't have the right permission — silent fallback
+    if (err.response && (err.response.status === 401 || err.response.status === 403 || err.response.status === 404)) {
+      console.log('OPNsense API: interface descriptions not available (permission required on API key)');
+      console.log('  → Use INTERFACE_MAP env var to set friendly names manually');
+    } else if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
+      // OPNsense unreachable — also silent
+    } else {
+      console.warn('Interface discovery error:', err.message);
+    }
+  }
 }
 
 // Middleware
@@ -84,7 +148,8 @@ const DEMO_HOSTS = [
     descr: 'Media Server',
     mac: '11:22:33:44:55:66',
     interface: 'lan',
-    '%interface': 'lan'
+    '%interface': 'lan',
+    friendly_interface: 'LAN'
   }
 ];
 
@@ -185,7 +250,7 @@ app.post('/api/wake-all', async (req, res) => {
   }
 });
 
-// API: Host Status — ping each host to check online/offline (or demo data)
+// API: Host Status — parallel ping each host to check online/offline (or demo data)
 app.get('/api/status', async (req, res) => {
   if (DEMO_MODE) {
     // Randomize online/offline per request for realistic demo behavior
@@ -197,13 +262,23 @@ app.get('/api/status', async (req, res) => {
     return res.json(statuses);
   }
 
+  // Parallel pings — all fire simultaneously, results as they come
+  const entries = Object.entries(HOST_IPS);
+  const results = await Promise.allSettled(
+    entries.map(async ([descr, ip]) => {
+      try {
+        await execAsync(`ping -c 1 -W 1 ${ip.replace(/[^0-9.:]/g, '')}`, { timeout: 2000 });
+        return [descr, { online: true }];
+      } catch {
+        return [descr, { online: false }];
+      }
+    })
+  );
   const statuses = {};
-  for (const [descr, ip] of Object.entries(HOST_IPS)) {
-    try {
-      execSync(`ping -c 1 -W 1 ${ip}`, { timeout: 2000, stdio: 'pipe' });
-      statuses[descr] = { online: true };
-    } catch {
-      statuses[descr] = { online: false };
+  for (const r of results) {
+    if (r.status === 'fulfilled') {
+      const [descr, st] = r.value;
+      statuses[descr] = st;
     }
   }
   res.json(statuses);
@@ -211,7 +286,7 @@ app.get('/api/status', async (req, res) => {
 
 app.get('/health', (req, res) => res.send('OK'));
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   if (DEMO_MODE) {
     console.log(`OPNsense WOL v2 DEMO running on http://localhost:${PORT}`);
     console.log(`Serving ${DEMO_HOSTS.length} mock hosts — no OPNsense connection needed`);
@@ -220,5 +295,7 @@ app.listen(PORT, () => {
     if (Object.keys(HOST_IPS).length > 0) {
       console.log(`Status checks enabled for ${Object.keys(HOST_IPS).length} host(s)`);
     }
+    // Auto-discover interface names from OPNsense API (non-blocking)
+    await discoverInterfaces();
   }
 });
