@@ -1,10 +1,10 @@
-# OPNsense WOL v3
+# OPNsense WOL v2.3
 
 ![Wake-on-LAN Dashboard](./screenshot.png)
 
-A lightweight web dashboard for waking devices on your network through the OPNsense WOL plugin API. v3 replaces ping-based status checks with OPNsense ARP table lookups — no `HOST_IPS` or `INTERFACE_MAP` needed. Built with Express.js and Tailwind CSS.
+A lightweight web dashboard for waking devices on your network through the OPNsense WOL plugin API. v2.3 replaces ping-based status checks with OPNsense ARP table lookups — no `HOST_IPS` or `INTERFACE_MAP` needed. Built with Express.js and Tailwind CSS.
 
-## What's New in v3
+## What's New in v2.3
 
 - **ARP-Based Status** — Host online/offline is determined directly from the OPNsense ARP table (MAC-level presence). No IP mapping, no ping, no firewall rules.
 - **No INTERFACE_MAP** — Friendly interface names (e.g. "HSD", "SVRS") come directly from the OPNsense WOL API's `%interface` field — no manual mapping.
@@ -81,7 +81,7 @@ The server is configured entirely through environment variables:
 | `VERIFY_SSL` | ❌ | `false` | Set to `"true"` to verify SSL cert |
 | `DEMO_MODE` | ❌ | `false` | Set to `"true"` to run with mock data — no OPNsense needed |
 
-> **Note on v2 → v3:** `HOST_IPS`, `INTERFACE_MAP`, and the separate `/api/status` endpoint are removed. Status and interface names come directly from OPNsense ARP + WOL APIs.
+> **Note on v2.2 → v2.3:** `HOST_IPS`, `INTERFACE_MAP`, and the separate `/api/status` endpoint are removed. Status and interface names come directly from OPNsense ARP + WOL APIs.
 
 ### Demo Mode
 
