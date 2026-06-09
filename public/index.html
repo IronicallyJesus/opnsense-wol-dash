@@ -243,8 +243,18 @@
                 document.getElementById('last-updated').textContent =
                     `Updated ${now.toLocaleTimeString()}`;
 
-                // Load statuses
-                await loadStatuses();
+                // Status is embedded in /api/hosts — map to _online for render
+                for (const host of hosts) {
+                    host._online = host.online === true ? true : (host.online === false ? false : null);
+                }
+
+                // Update status indicator
+                const onlineCount = hosts.filter(h => h._online === true).length;
+                const totalKnown = hosts.filter(h => h._online !== null).length;
+                const indicator = document.getElementById('status-indicator');
+                if (totalKnown > 0) {
+                    indicator.innerHTML = `<span class="w-2 h-2 rounded-full ${onlineCount > 0 ? 'status-online' : ''}" style="background: ${onlineCount > 0 ? 'var(--online)' : 'var(--offline)'}"></span> ${onlineCount}/${totalKnown} online`;
+                }
                 renderHosts();
             } catch (err) {
                 console.error(err);
@@ -259,39 +269,6 @@
             }
         }
 
-        // ── Load Statuses ──
-        async function loadStatuses() {
-            try {
-                const res = await fetch('/api/status');
-                if (!res.ok) return;
-                const statuses = await res.json();
-
-                // Merge statuses into hosts
-                for (const host of hosts) {
-                    const descr = host.descr || '';
-                    if (statuses[descr] !== undefined) {
-                        host._online = statuses[descr].online;
-                    } else {
-                        host._online = null; // unknown
-                    }
-                }
-
-                // Update status indicator
-                const online = hosts.filter(h => h._online === true).length;
-                const total = hosts.filter(h => h._online !== null).length;
-                const indicator = document.getElementById('status-indicator');
-                if (total > 0) {
-                    const dot = indicator.querySelector('span');
-                    dot.style.background = online > 0 ? 'var(--online)' : 'var(--offline)';
-                    indicator.innerHTML = `<span class="w-2 h-2 rounded-full ${online > 0 ? 'status-online' : ''}" style="background: ${online > 0 ? 'var(--online)' : 'var(--offline)'}"></span> ${online}/${total} online`;
-                }
-            } catch {
-                // Status endpoint not configured — no hosts to check
-                document.getElementById('status-indicator').textContent = '';
-            }
-        }
-
-        // ── Render Hosts ──
         function renderHosts() {
             if (!Array.isArray(hosts) || hosts.length === 0) {
                 grid.innerHTML = `<div class="col-span-1 md:col-span-2 lg:col-span-3 text-center py-20" style="color: var(--text-muted)">No WOL hosts configured in OPNsense.</div>`;
@@ -441,8 +418,8 @@
 
         // ── Init ──
         loadHosts();
-        // Auto-refresh host list + status every 30s
-        statusCheckInterval = setInterval(loadHosts, 30000);
+        // Auto-refresh host list every 30s
+        refreshInterval = setInterval(loadHosts, 30000);
     </script>
 </body>
 </html>
