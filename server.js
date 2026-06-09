@@ -87,8 +87,7 @@ const client = axios.create({
     username: API_KEY,
     password: API_SECRET
   },
-  httpsAgent: httpsAgent,
-  headers: { 'Content-Type': 'application/json' }
+  httpsAgent: httpsAgent
 });
 
 // Build ARP lookup: mac -> { ip, intf, intf_desc }
@@ -132,7 +131,7 @@ app.get('/api/hosts', async (req, res) => {
         rowCount: 1000,
         sort: {},
         searchPhrase: ''
-      }),
+      }, { headers: { 'Content-Type': 'application/json' } }),
       fetchArpTable()
     ]);
 
@@ -173,7 +172,7 @@ app.post('/api/wake/:uuid', async (req, res) => {
   }
 
   try {
-    const response = await client.post('/api/wol/wol/set', { uuid });
+    const response = await client.post('/api/wol/wol/set', { uuid }, { headers: { 'Content-Type': 'application/json' } });
     res.json(response.data);
   } catch (error) {
     console.error(`Error waking host ${uuid}:`, error.message);
@@ -195,12 +194,12 @@ app.post('/api/wake-all', async (req, res) => {
   try {
     const hostRes = await client.post('/api/wol/wol/searchHost', {
       current: 1, rowCount: 1000, sort: {}, searchPhrase: ''
-    });
+    }, { headers: { 'Content-Type': 'application/json' } });
     const hosts = hostRes.data.rows || [];
     const results = [];
     for (const host of hosts) {
       try {
-        const wakeRes = await client.post('/api/wol/wol/set', { uuid: host.uuid });
+        const wakeRes = await client.post('/api/wol/wol/set', { uuid: host.uuid }, { headers: { 'Content-Type': 'application/json' } });
         results.push({ descr: host.descr, status: wakeRes.data.status || 'OK' });
       } catch (e) {
         results.push({ descr: host.descr, status: 'FAILED', error: e.message });
