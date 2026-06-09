@@ -24,8 +24,9 @@ try {
   console.warn('Failed to parse HOST_IPS env var:', e.message);
 }
 
-// Parse INTERFACE_MAP env var — maps raw OPNsense interface names to friendly labels
-// Format: '{"opt3":"IoT","vlan0x0a":"VLAN 10 - Devices","lan":"LAN"}'
+// Parse INTERFACE_MAP env var — maps OPNsense port names to friendly labels
+// OPNsense WOL hosts use port-based names like "LAN", "OPT1", "OPT2", "OPT3", etc.
+// Format: '{"OPT2":"HSD","OPT3":"IOT","LAN":"MGMT"}'
 let INTERFACE_MAP = {};
 try {
   if (process.env.INTERFACE_MAP) {
@@ -33,44 +34,6 @@ try {
   }
 } catch (e) {
   console.warn('Failed to parse INTERFACE_MAP env var:', e.message);
-}
-
-// Auto-discover interface descriptions from OPNsense ARP table
-// The ARP endpoint returns intf_description for every entry — no extra perms needed
-async function discoverInterfaces() {
-  if (DEMO_MODE || !API_KEY || !API_SECRET || !OPNSENSE_URL) return;
-  try {
-    const resp = await client.get('/api/diagnostics/interface/get_arp');
-    const arp = resp.data;
-    const discovered = {};
-    if (Array.isArray(arp)) {
-      for (const entry of arp) {
-        const iface = entry.intf;
-        const desc = entry.intf_description;
-        if (iface && desc && !discovered[iface]) {
-          discovered[iface] = desc.trim();
-        }
-      }
-    }
-    // Merge — discovered values don't override explicit env config
-    for (const [iface, descr] of Object.entries(discovered)) {
-      if (!INTERFACE_MAP[iface]) {
-        INTERFACE_MAP[iface] = descr;
-        console.log(`  Auto-discovered interface: ${iface} → ${descr}`);
-      }
-    }
-    if (Object.keys(discovered).length > 0) {
-      console.log(`Interface mapping: ${Object.keys(INTERFACE_MAP).length} entries (${Object.keys(discovered).length} auto-discovered from ARP)`);
-    }
-  } catch (err) {
-    if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND' || err.code === 'ETIMEDOUT') {
-      // OPNsense unreachable — silent
-    } else if (err.response && err.response.status === 401) {
-      console.log('OPNsense API: auth failed — cannot discover interfaces');
-    } else {
-      console.warn('Interface discovery error:', err.message);
-    }
-  }
 }
 
 // Middleware
@@ -271,7 +234,5 @@ app.listen(PORT, async () => {
     if (Object.keys(HOST_IPS).length > 0) {
       console.log(`Status checks enabled for ${Object.keys(HOST_IPS).length} host(s)`);
     }
-    // Auto-discover interface names from OPNsense API (non-blocking)
-    await discoverInterfaces();
   }
 });

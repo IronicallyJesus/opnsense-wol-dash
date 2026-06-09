@@ -68,7 +68,7 @@ The server is configured entirely through environment variables:
 | `PORT` | ❌ | `3000` | Server listen port |
 | `VERIFY_SSL` | ❌ | `false` | Set to `"true"` to verify SSL cert |
 | `HOST_IPS` | ❌ | `{}` | JSON map of host descriptions to IPs for status checks |
-| `INTERFACE_MAP` | ❌ | `{}` | JSON map of raw OPNsense interface names to friendly labels |
+| `INTERFACE_MAP` | ❌ | `{}` | JSON map of OPNsense port names (LAN, OPT1, OPT2…) to friendly labels |
 | `DEMO_MODE` | ❌ | `false` | Set to `"true"` to run with mock data — no OPNsense needed |
 
 ### Demo Mode
@@ -82,17 +82,17 @@ DEMO_MODE=true node server.js
 
 ### INTERFACE_MAP
 
-To show friendly names instead of `opt3`, `vlan0x0a`, etc., set `INTERFACE_MAP` to a JSON object mapping raw OPNsense interface names to human-readable labels:
+To show friendly names instead of `OPT2`, `OPT3`, etc., set `INTERFACE_MAP` to a JSON object mapping OPNsense port names (the names shown in the WOL plugin interface column) to human-readable labels:
 
 ```sh
-INTERFACE_MAP='{"opt3":"IoT VLAN","vlan0x0a":"VLAN 10","lan":"LAN"}'
+INTERFACE_MAP='{"OPT2":"HSD","OPT3":"IOT","LAN":"MGMT","OPT1":"WiFi"}'
 ```
 
 Unmapped interfaces show their raw name. Docker equivalent:
 
 ```yaml
 environment:
-  INTERFACE_MAP: '{"opt3":"IoT VLAN","vlan0x0a":"VLAN 10","lan":"LAN"}'
+  INTERFACE_MAP: '{"OPT2":"HSD","OPT3":"IOT","LAN":"MGMT","OPT1":"WiFi"}'
 ```
 
 ### HOST_IPS
