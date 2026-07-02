@@ -681,7 +681,7 @@
                         </div>` : ''}
                         <div class="flex justify-between items-center text-xs">
                             <span class="font-medium" style="color: var(--text-muted)">Latency</span>
-                            <span class="rtt-badge text-xs font-bold ${host._online ? 'rtt-cached' : 'opacity-40'}" data-uuid="${uuid}" style="color: var(--text-muted)">${host._online ? (rttData[uuid] ? `${rttData[uuid]}ms` : '—') : 'offline'}</span>
+                            <span class="rtt-badge text-xs font-bold ${host._online ? '' : 'opacity-40'}" data-uuid="${uuid}" style="color: var(--text-muted)">${host._online ? (rttData[uuid] ? `${rttData[uuid]}ms` : '—') : 'offline'}</span>
                         </div>
                         ${lastWake ? `
                         <div class="flex justify-between items-center text-xs">
@@ -725,7 +725,7 @@
                 const cardBadge = document.querySelector(`.rtt-badge[data-uuid="${uuid}"]`);
                 if (cardBadge) {
                     cardBadge.textContent = `${rtt}ms`;
-                    cardBadge.className = `rtt-badge text-xs font-bold px-2 py-0.5 rounded-full ${rttColor(rtt)}`;
+                    cardBadge.className = `rtt-badge text-xs font-bold ${rttColor(rtt)}`;
                 }
                 // Table view: find the .ping-cell element
                 const td = document.querySelector(`.ping-cell[data-uuid="${uuid}"]`);
