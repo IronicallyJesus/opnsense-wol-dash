@@ -431,21 +431,21 @@
                     <span>Wake All</span>
                 </button>
 
-                <!-- Schedule Button -->
-                <div class="w-full sm:w-auto flex justify-start sm:block order-last sm:order-none">
+                <!-- Schedule Button + Refresh (same row on mobile) -->
+                <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end order-last sm:order-none">
                     <button onclick="openSchedulesModal()" class="p-3 rounded-xl transition-colors border shadow-lg" title="Scheduled wakes"
                         style="background: var(--bg-card); color: var(--text-muted); border-color: var(--border);">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
                             <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                         </svg>
                     </button>
-                </div>
 
-                <!-- Refresh Button -->
-                <button onclick="loadHosts()" class="p-3 rounded-xl transition-colors border shadow-lg"
-                    style="background: var(--bg-card); color: var(--accent); border-color: var(--border);">
-                    Refresh
-                </button>
+                    <!-- Refresh Button -->
+                    <button onclick="loadHosts()" class="p-3 rounded-xl transition-colors border shadow-lg"
+                        style="background: var(--bg-card); color: var(--accent); border-color: var(--border);">
+                        Refresh
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -679,7 +679,7 @@
                         </div>` : ''}
                         <div class="flex justify-between items-center text-xs">
                             <span class="font-medium" style="color: var(--text-muted)">Latency</span>
-                            <span class="rtt-badge text-[0.65rem] font-bold ${host._online ? 'rtt-cached' : 'opacity-40'}" data-uuid="${uuid}" style="color: var(--text-muted)">${host._online ? (rttData[uuid] ? `${rttData[uuid]}ms` : '—') : 'offline'}</span>
+                            <span class="rtt-badge text-xs font-bold ${host._online ? 'rtt-cached' : 'opacity-40'}" data-uuid="${uuid}" style="color: var(--text-muted)">${host._online ? (rttData[uuid] ? `${rttData[uuid]}ms` : '—') : 'offline'}</span>
                         </div>
                         ${lastWake ? `
                         <div class="flex justify-between items-center text-xs">
@@ -723,13 +723,13 @@
                 const cardBadge = document.querySelector(`.rtt-badge[data-uuid="${uuid}"]`);
                 if (cardBadge) {
                     cardBadge.textContent = `${rtt}ms`;
-                    cardBadge.className = `rtt-badge text-[0.65rem] font-bold px-2 py-0.5 rounded-full ${rttColor(rtt)}`;
+                    cardBadge.className = `rtt-badge text-xs font-bold px-2 py-0.5 rounded-full ${rttColor(rtt)}`;
                 }
                 // Table view: find the .ping-cell element
                 const td = document.querySelector(`.ping-cell[data-uuid="${uuid}"]`);
                 if (td) {
                     td.textContent = `${rtt}ms`;
-                    td.className = `ping-cell text-[0.65rem] font-bold ${rttColor(rtt)}`;
+                    td.className = `ping-cell text-xs font-bold ${rttColor(rtt)}`;
                 }
             }
         }
@@ -767,7 +767,7 @@
                     <td><span class="td-iface">${iface}</span></td>
                     <td><span class="td-mac">${mac}</span></td>
                     ${ip ? `<td style="color: var(--text-muted); font-size: 0.75rem;">${ip}</td>` : '<td></td>'}
-                    <td><span class="ping-cell text-[0.65rem] font-bold ${host._online ? 'rtt-cached' : ''}" data-uuid="${uuid}" style="color: var(--text-muted)">${host._online ? (rttData[uuid] ? `${rttData[uuid]}ms` : '—') : 'offline'}</span></td>
+                    <td><span class="ping-cell text-xs font-bold ${host._online ? 'rtt-cached' : ''}" data-uuid="${uuid}" style="color: var(--text-muted)">${host._online ? (rttData[uuid] ? `${rttData[uuid]}ms` : '—') : 'offline'}</span></td>
                     <td style="color: var(--text-muted); font-size: 0.75rem;">${lastWake || '—'}</td>
                     <td class="td-wake">
                         <button data-uuid="${uuid}" data-descr="${descr}" class="btn-wake-table">Wake</button>
