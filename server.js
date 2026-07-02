@@ -212,15 +212,24 @@ app.get('/api/ping/:uuid', async (req, res) => {
   }
 
   const { exec } = require('child_process');
-  exec(`ping -c 1 -W 2 ${ip}`, { timeout: 5000 }, (err, stdout) => {
+  exec(`ping -c 1 -W 3 ${ip}`, { timeout: 6000 }, (err, stdout) => {
     let rtt = null;
+    let unreachable = false;
+    const stderr = err ? (err.stderr || '') : '';
+    const output = (stdout || '') + (err ? stderr : '');
+
+    // Check for explicit unreachable / blocked
+    if (/unreachable|100% packet loss|Host unreachable|timed out/i.test(output)) {
+      unreachable = true;
+    }
+
     if (!err && stdout) {
-      // Parse "time=1.23 ms" or "rtt min/avg/max/mdev = 1.234/..."
       const m = stdout.match(/time=(\d+\.?\d*)\s*ms/);
       if (m) rtt = Math.round(parseFloat(m[1]) * 10) / 10;
     }
-    pingCache[uuid] = { rtt, time: now };
-    res.json({ uuid, rtt });
+
+    pingCache[uuid] = { rtt, time: now, unreachable };
+    res.json({ uuid, rtt, unreachable });
   });
 });
 

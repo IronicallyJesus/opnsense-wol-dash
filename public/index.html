@@ -720,6 +720,9 @@
                     if (data.rtt !== undefined) {
                         rttData[host.uuid] = data.rtt;
                     }
+                    if (data.unreachable) {
+                        rttData[host.uuid + '_unreachable'] = true;
+                    }
                 } catch {
                     // silent — ping is best-effort
                 }
@@ -727,22 +730,27 @@
 
             // Update DOM with RTTs
             for (const [uuid, rtt] of Object.entries(rttData)) {
+                if (uuid.endsWith('_unreachable')) continue;
+                const label = rtt === null
+                    ? (rttData[uuid + '_unreachable'] ? 'blocked' : '—')
+                    : `${rtt}ms`;
                 // Card view: find the .rtt-badge element
                 const cardBadge = document.querySelector(`.rtt-badge[data-uuid="${uuid}"]`);
                 if (cardBadge) {
-                    cardBadge.textContent = `${rtt}ms`;
+                    cardBadge.textContent = label;
                     cardBadge.className = `rtt-badge text-xs font-bold ${rttColor(rtt)}`;
                 }
                 // Table view: find the .ping-cell element
                 const td = document.querySelector(`.ping-cell[data-uuid="${uuid}"]`);
                 if (td) {
-                    td.textContent = `${rtt}ms`;
+                    td.textContent = label;
                     td.className = `ping-cell text-xs font-bold ${rttColor(rtt)}`;
                 }
             }
         }
 
         function rttColor(rtt) {
+            if (rtt === null || rtt === undefined) return 'opacity-50';
             if (rtt < 50) return 'text-green-400';
             if (rtt < 150) return 'text-yellow-400';
             return 'text-red-400';
