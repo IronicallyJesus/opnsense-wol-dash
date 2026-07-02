@@ -247,7 +247,7 @@ app.get('/api/ping', async (req, res) => {
     // Simulate batch ping results
     const results = {};
     for (const h of hosts.filter(h => h.ip)) {
-      const rtt = Math.round(50 + Math.random() * 450);
+      const rtt = Math.round(5 + Math.random() * 15);
       pingCache[h.uuid] = { rtt, time: Date.now() };
       results[h.uuid] = rtt;
     }
