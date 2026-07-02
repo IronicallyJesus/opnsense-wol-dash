@@ -357,6 +357,41 @@
             font-size: 0.875rem;
         }
 
+        /* ── Mobile: Schedules Modal Tighter ── */
+        @media (max-width: 480px) {
+            .modal-panel {
+                padding: 1rem;
+                margin: 0 0.5rem;
+                max-height: 90vh;
+            }
+            .schedule-item {
+                padding: 0.5rem 0.625rem;
+            }
+            .sched-toggle {
+                width: 1.75rem;
+                height: 1rem;
+                margin: 0 0.375rem;
+            }
+            .sched-toggle::after {
+                width: 0.75rem;
+                height: 0.75rem;
+                top: 0.125rem;
+                left: 0.125rem;
+            }
+            .sched-toggle.on::after { transform: translateX(0.75rem); }
+            .sched-toggle.off::after { transform: translateX(0); }
+            .day-checkboxes {
+                gap: 0.125rem;
+            }
+            .day-checkboxes label {
+                font-size: 0.6rem;
+            }
+            .day-checkboxes input[type="checkbox"] {
+                width: 1rem;
+                height: 1rem;
+            }
+        }
+
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-10 px-4">
@@ -445,12 +480,14 @@
 
             <!-- Add Form -->
             <div class="border-t pt-4 flex flex-col gap-3" style="border-color: var(--border)">
-                <div class="flex flex-wrap gap-2 items-end">
-                    <select id="sched-host" class="flex-1 min-w-[120px] py-2 px-3 rounded-xl text-sm border" style="background: var(--bg-card-inner); color: var(--text); border-color: var(--border);">
+                <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-end">
+                    <select id="sched-host" class="w-full sm:flex-1 sm:min-w-[120px] py-2 px-3 rounded-xl text-sm border" style="background: var(--bg-card-inner); color: var(--text); border-color: var(--border);">
                         <option value="">Select host...</option>
                     </select>
-                    <input id="sched-time" type="time" value="09:00" class="py-2 px-3 rounded-xl text-sm border" style="background: var(--bg-card-inner); color: var(--text); border-color: var(--border);">
-                    <button onclick="addSchedule()" class="py-2 px-5 rounded-xl text-sm font-bold whitespace-nowrap" style="background: var(--accent); color: #fff;">Add</button>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <input id="sched-time" type="time" value="09:00" class="py-2 px-3 rounded-xl text-sm border" style="background: var(--bg-card-inner); color: var(--text); border-color: var(--border);">
+                        <button onclick="addSchedule()" class="py-2 px-5 rounded-xl text-sm font-bold whitespace-nowrap" style="background: var(--accent); color: #fff;">Add</button>
+                    </div>
                 </div>
                 <div class="flex items-center gap-3 flex-wrap">
                     <span class="text-xs font-medium" style="color: var(--text-muted)">Days:</span>
