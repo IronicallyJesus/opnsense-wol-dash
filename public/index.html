@@ -407,6 +407,7 @@
                 const descr = esc(host.descr || 'Unknown Host');
                 const iface = esc(host.friendly_interface || host.interface || host['%interface'] || 'Unknown');
                 const mac = esc((host.mac || '').toUpperCase());
+                const ip = esc(host.ip || '');
                 const uuid = esc(host.uuid);
                 const lastWake = getLastWake(uuid);
 
@@ -443,6 +444,10 @@
                             <span class="font-medium" style="color: var(--text-muted)">MAC</span>
                             <span class="font-mono tracking-wide select-all" style="color: var(--text)">${mac}</span>
                         </div>
+                        ${ip ? `<div class="flex justify-between items-center text-xs">
+                            <span class="font-medium" style="color: var(--text-muted)">IP</span>
+                            <span style="color: var(--text)">${ip}</span>
+                        </div>` : ''}
                         <div class="flex justify-between items-center text-xs">
                             <span class="font-medium" style="color: var(--text-muted)">Latency</span>
                             <span class="rtt-badge text-xs font-bold ${host._online ? 'rtt-cached' : 'opacity-40'}" data-uuid="${uuid}" style="color: var(--text-muted)">${host._online ? (rttData[uuid] ? `${rttData[uuid]}ms` : '—') : 'offline'}</span>
@@ -542,8 +547,8 @@
             }).join('');
 
             grid.innerHTML = `
-                <div class="col-span-1 sm:col-span-2 lg:col-span-3" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 0.75rem; overflow: hidden;">
-                    <table>
+                <div class="col-span-1 sm:col-span-2 lg:col-span-3" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 0.75rem; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table style="min-width: 640px;">
                         <thead>
                             <tr>
                                 <th>Host</th>
