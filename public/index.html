@@ -230,7 +230,7 @@
                 <p class="text-sm mt-2 ml-1" style="color: var(--text-muted)">Dashboard <span id="version-tag" class="text-xs opacity-60">v3</span></p>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3 justify-end">
                 <!-- Theme Selector -->
                 <div class="relative">
                     <select id="theme-select"
@@ -256,13 +256,13 @@
                     style="background: var(--accent); color: #fff;">
                     <span>Wake All</span>
                 </button>
-            </div>
 
-            <!-- Refresh Button -->
-            <button onclick="loadHosts()" class="p-3 rounded-xl transition-colors border shadow-lg"
-                style="background: var(--bg-card); color: var(--accent); border-color: var(--border);">
-                Refresh
-            </button>
+                <!-- Refresh Button -->
+                <button onclick="loadHosts()" class="p-3 rounded-xl transition-colors border shadow-lg"
+                    style="background: var(--bg-card); color: var(--accent); border-color: var(--border);">
+                    Refresh
+                </button>
+            </div>
         </header>
 
         <!-- Last Updated + Auto-Refresh indicator -->
