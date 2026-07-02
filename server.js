@@ -162,6 +162,107 @@ app.get('/api/hosts', async (req, res) => {
   }
 });
 
+// ── In-memory ping cache: { uuid: { rtt: number|null, time: timestamp } } ──
+const pingCache = {};
+const PING_CACHE_TTL = 60_000; // 1 minute
+
+// Helper: get IP for a host uuid
+async function getHostIp(uuid) {
+  if (DEMO_MODE) {
+    const h = DEMO_HOSTS.find(h => h.uuid === uuid);
+    return h ? h.ip : null;
+  }
+  try {
+    const resp = await client.post('/api/wol/wol/searchHost', {
+      current: 1, rowCount: 1000, sort: {}, searchPhrase: ''
+    }, { headers: { 'Content-Type': 'application/json' } });
+    const hosts = resp.data.rows || [];
+    const host = hosts.find(h => h.uuid === uuid);
+    if (!host || !host.mac) return null;
+    const arpTable = await fetchArpTable();
+    const mac = host.mac.toLowerCase().trim();
+    return arpTable[mac] ? arpTable[mac].ip : null;
+  } catch {
+    return null;
+  }
+}
+
+// API: Ping a host — returns RTT in ms (cached for PING_CACHE_TTL)
+app.get('/api/ping/:uuid', async (req, res) => {
+  const { uuid } = req.params;
+  const now = Date.now();
+
+  // Return cached value if fresh
+  const cached = pingCache[uuid];
+  if (cached && (now - cached.time) < PING_CACHE_TTL) {
+    return res.json({ uuid, rtt: cached.rtt });
+  }
+
+  if (DEMO_MODE) {
+    // Simulate plausible RTTs for demo hosts (5-20ms)
+    const rtt = Math.round(5 + Math.random() * 15);
+    pingCache[uuid] = { rtt, time: now };
+    return res.json({ uuid, rtt });
+  }
+
+  const ip = await getHostIp(uuid);
+  if (!ip) {
+    pingCache[uuid] = { rtt: null, time: now };
+    return res.json({ uuid, rtt: null });
+  }
+
+  const { exec } = require('child_process');
+  exec(`ping -c 1 -W 2 ${ip}`, { timeout: 5000 }, (err, stdout) => {
+    let rtt = null;
+    if (!err && stdout) {
+      // Parse "time=1.23 ms" or "rtt min/avg/max/mdev = 1.234/..."
+      const m = stdout.match(/time=(\d+\.?\d*)\s*ms/);
+      if (m) rtt = Math.round(parseFloat(m[1]) * 10) / 10;
+    }
+    pingCache[uuid] = { rtt, time: now };
+    res.json({ uuid, rtt });
+  });
+});
+
+// API: Batch ping — returns RTT for all hosts with an IP
+app.get('/api/ping', async (req, res) => {
+  const hosts = DEMO_MODE
+    ? DEMO_HOSTS
+    : (await (async () => {
+        try {
+          const resp = await client.post('/api/wol/wol/searchHost', {
+            current: 1, rowCount: 1000, sort: {}, searchPhrase: ''
+          }, { headers: { 'Content-Type': 'application/json' } });
+          return resp.data.rows || [];
+        } catch { return []; }
+      })());
+
+  const ips = DEMO_MODE
+    ? hosts.filter(h => h.ip).map(h => ({ uuid: h.uuid, ip: h.ip }))
+    : (() => { /* resolve ARP for non-demo — skip batch ping for now, use individual */ return []; })();
+
+  if (DEMO_MODE) {
+    // Simulate batch ping results
+    const results = {};
+    for (const h of hosts.filter(h => h.ip)) {
+      const rtt = Math.round(5 + Math.random() * 15);
+      pingCache[h.uuid] = { rtt, time: Date.now() };
+      results[h.uuid] = rtt;
+    }
+    return res.json(results);
+  }
+
+  // Real mode: return whatever is in cache (individual pings populate it)
+  const results = {};
+  for (const host of hosts) {
+    const cached = pingCache[host.uuid];
+    if (cached && (Date.now() - cached.time) < PING_CACHE_TTL) {
+      results[host.uuid] = cached.rtt;
+    }
+  }
+  res.json(results);
+});
+
 // API: Wake Host
 app.post('/api/wake/:uuid', async (req, res) => {
   const { uuid } = req.params;
@@ -212,6 +313,61 @@ app.post('/api/wake-all', async (req, res) => {
   }
 });
 
+// ── Scheduled Wake (feat3) ──
+const scheduler = require('./lib/scheduler');
+
+// API: GET /api/schedules — list all schedules
+app.get('/api/schedules', (req, res) => {
+  res.json(scheduler.getSchedules());
+});
+
+// API: POST /api/schedules — create a schedule
+app.post('/api/schedules', (req, res) => {
+  const { hostUuid, hostLabel, time, days, label, enabled } = req.body;
+  if (!hostUuid || !time) {
+    return res.status(400).json({ error: 'hostUuid and time are required' });
+  }
+  const schedule = scheduler.createSchedule({ hostUuid, hostLabel, time, days, label, enabled });
+  res.status(201).json(schedule);
+});
+
+// API: PUT /api/schedules/:id — update a schedule
+app.put('/api/schedules/:id', (req, res) => {
+  const schedule = scheduler.updateSchedule(req.params.id, req.body);
+  if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
+  res.json(schedule);
+});
+
+// API: DELETE /api/schedules/:id — delete a schedule
+app.delete('/api/schedules/:id', (req, res) => {
+  const deleted = scheduler.deleteSchedule(req.params.id);
+  if (!deleted) return res.status(404).json({ error: 'Schedule not found' });
+  res.json({ status: 'OK' });
+});
+
+// Scheduled wake tick: runs every 60 seconds
+const SCHEDULER_TICK = 60_000; // 1 minute
+let schedulerInterval = null;
+
+async function schedulerTick() {
+  try {
+    const fired = await scheduler.tick(async (hostUuid) => {
+      // Reuse the wake logic — POST to the same endpoint internally
+      if (DEMO_MODE) {
+        await new Promise(r => setTimeout(r, 400));
+        return { status: 'OK' };
+      }
+      const resp = await client.post('/api/wol/wol/set', { uuid: hostUuid }, { headers: { 'Content-Type': 'application/json' } });
+      return resp.data;
+    });
+    if (fired.length > 0) {
+      console.log(`[Scheduler] Fired ${fired.length} wake(s):`, fired.map(f => f.hostLabel || f.hostUuid).join(', '));
+    }
+  } catch (err) {
+    console.error('[Scheduler] Tick error:', err.message);
+  }
+}
+
 app.get('/health', (req, res) => res.send('OK'));
 
 app.listen(PORT, async () => {
@@ -224,4 +380,8 @@ app.listen(PORT, async () => {
       console.log('OPNsense API connected — status via ARP table, interface names via %interface');
     }
   }
+
+  // Start the scheduled wake ticker
+  schedulerInterval = setInterval(schedulerTick, SCHEDULER_TICK);
+  console.log(`[Scheduler] Tick every ${SCHEDULER_TICK / 1000}s — ${scheduler.getSchedules().length} schedule(s) loaded`);
 });
