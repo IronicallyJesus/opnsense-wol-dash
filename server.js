@@ -199,10 +199,8 @@ app.get('/api/ping/:uuid', async (req, res) => {
   }
 
   if (DEMO_MODE) {
-    // Simulate plausible RTTs for demo hosts
-    const delay = 100 + Math.random() * 400;
-    await new Promise(r => setTimeout(r, Math.min(delay, 300)));
-    const rtt = Math.round(delay);
+    // Simulate plausible RTTs for demo hosts (5-20ms)
+    const rtt = Math.round(5 + Math.random() * 15);
     pingCache[uuid] = { rtt, time: now };
     return res.json({ uuid, rtt });
   }
