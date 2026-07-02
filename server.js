@@ -162,6 +162,109 @@ app.get('/api/hosts', async (req, res) => {
   }
 });
 
+// ── In-memory ping cache: { uuid: { rtt: number|null, time: timestamp } } ──
+const pingCache = {};
+const PING_CACHE_TTL = 60_000; // 1 minute
+
+// Helper: get IP for a host uuid
+async function getHostIp(uuid) {
+  if (DEMO_MODE) {
+    const h = DEMO_HOSTS.find(h => h.uuid === uuid);
+    return h ? h.ip : null;
+  }
+  try {
+    const resp = await client.post('/api/wol/wol/searchHost', {
+      current: 1, rowCount: 1000, sort: {}, searchPhrase: ''
+    }, { headers: { 'Content-Type': 'application/json' } });
+    const hosts = resp.data.rows || [];
+    const host = hosts.find(h => h.uuid === uuid);
+    if (!host || !host.mac) return null;
+    const arpTable = await fetchArpTable();
+    const mac = host.mac.toLowerCase().trim();
+    return arpTable[mac] ? arpTable[mac].ip : null;
+  } catch {
+    return null;
+  }
+}
+
+// API: Ping a host — returns RTT in ms (cached for PING_CACHE_TTL)
+app.get('/api/ping/:uuid', async (req, res) => {
+  const { uuid } = req.params;
+  const now = Date.now();
+
+  // Return cached value if fresh
+  const cached = pingCache[uuid];
+  if (cached && (now - cached.time) < PING_CACHE_TTL) {
+    return res.json({ uuid, rtt: cached.rtt });
+  }
+
+  if (DEMO_MODE) {
+    // Simulate plausible RTTs for demo hosts
+    const delay = 100 + Math.random() * 400;
+    await new Promise(r => setTimeout(r, Math.min(delay, 300)));
+    const rtt = Math.round(delay);
+    pingCache[uuid] = { rtt, time: now };
+    return res.json({ uuid, rtt });
+  }
+
+  const ip = await getHostIp(uuid);
+  if (!ip) {
+    pingCache[uuid] = { rtt: null, time: now };
+    return res.json({ uuid, rtt: null });
+  }
+
+  const { exec } = require('child_process');
+  exec(`ping -c 1 -W 2 ${ip}`, { timeout: 5000 }, (err, stdout) => {
+    let rtt = null;
+    if (!err && stdout) {
+      // Parse "time=1.23 ms" or "rtt min/avg/max/mdev = 1.234/..."
+      const m = stdout.match(/time=(\d+\.?\d*)\s*ms/);
+      if (m) rtt = Math.round(parseFloat(m[1]) * 10) / 10;
+    }
+    pingCache[uuid] = { rtt, time: now };
+    res.json({ uuid, rtt });
+  });
+});
+
+// API: Batch ping — returns RTT for all hosts with an IP
+app.get('/api/ping', async (req, res) => {
+  const hosts = DEMO_MODE
+    ? DEMO_HOSTS
+    : (await (async () => {
+        try {
+          const resp = await client.post('/api/wol/wol/searchHost', {
+            current: 1, rowCount: 1000, sort: {}, searchPhrase: ''
+          }, { headers: { 'Content-Type': 'application/json' } });
+          return resp.data.rows || [];
+        } catch { return []; }
+      })());
+
+  const ips = DEMO_MODE
+    ? hosts.filter(h => h.ip).map(h => ({ uuid: h.uuid, ip: h.ip }))
+    : (() => { /* resolve ARP for non-demo — skip batch ping for now, use individual */ return []; })();
+
+  if (DEMO_MODE) {
+    // Simulate batch ping results
+    const results = {};
+    for (const h of hosts.filter(h => h.ip)) {
+      const rtt = Math.round(50 + Math.random() * 450);
+      pingCache[h.uuid] = { rtt, time: Date.now() };
+      results[h.uuid] = rtt;
+    }
+    return res.json(results);
+  }
+
+  // Real mode: return whatever is in cache (individual pings populate it)
+  const results = {};
+  for (const host of hosts) {
+    const cached = pingCache[host.uuid];
+    if (cached && (Date.now() - cached.time) < PING_CACHE_TTL) {
+      results[host.uuid] = cached.rtt;
+    }
+  }
+  res.json(results);
+});
+
 // API: Wake Host
 app.post('/api/wake/:uuid', async (req, res) => {
   const { uuid } = req.params;
