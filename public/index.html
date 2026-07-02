@@ -218,6 +218,145 @@
         }
         .view-toggle button:first-child { border-right: 1px solid var(--border); }
 
+        /* ── Schedules Modal ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.6);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-panel {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 1rem;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+        .modal-overlay.open .modal-panel {
+            transform: scale(1);
+        }
+        .schedule-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            background: var(--bg-card-inner);
+            transition: border-color 0.15s;
+        }
+        .schedule-item:hover {
+            border-color: var(--border-hover);
+        }
+        .schedule-item .sched-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .schedule-item .sched-host {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-heading);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .schedule-item .sched-detail {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.125rem;
+        }
+        .schedule-item .sched-last {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+        .sched-toggle {
+            width: 2.25rem;
+            height: 1.25rem;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+            flex-shrink: 0;
+            margin: 0 0.5rem;
+        }
+        .sched-toggle::after {
+            content: '';
+            position: absolute;
+            top: 0.125rem;
+            left: 0.125rem;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 999px;
+            background: #fff;
+            transition: transform 0.2s;
+        }
+        .sched-toggle.on { background: var(--accent); }
+        .sched-toggle.on::after { transform: translateX(1rem); }
+        .sched-toggle.off { background: #475569; }
+        .sched-toggle.off::after { transform: translateX(0); }
+        .sched-del {
+            padding: 0.375rem 0.625rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+        .sched-del:hover {
+            color: #fca5a5;
+            border-color: rgba(239,68,68,0.3);
+            background: rgba(239,68,68,0.1);
+        }
+        .day-checkboxes {
+            display: flex;
+            gap: 0.25rem;
+        }
+        .day-checkboxes label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.125rem;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+        .day-checkboxes input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+        .empty-schedules {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-10 px-4">
@@ -257,6 +396,12 @@
                     <span>Wake All</span>
                 </button>
 
+                <!-- Schedule Button -->
+                <button onclick="openSchedulesModal()" class="p-3 rounded-xl transition-colors border shadow-lg" title="Scheduled wakes"
+                    style="background: var(--bg-card); color: var(--text-muted); border-color: var(--border);">
+                    Clock
+                </button>
+
                 <!-- Refresh Button -->
                 <button onclick="loadHosts()" class="p-3 rounded-xl transition-colors border shadow-lg"
                     style="background: var(--bg-card); color: var(--accent); border-color: var(--border);">
@@ -278,6 +423,47 @@
         <div id="host-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 host-grid">
             <div class="col-span-1 md:col-span-2 lg:col-span-3 flex justify-center py-20" style="color: var(--text-muted)">
                 Loading...
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Schedules Modal ── -->
+    <div id="schedules-modal" class="modal-overlay" onclick="if(event.target===this)closeSchedulesModal()">
+        <div class="modal-panel">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-lg font-bold" style="color: var(--text-heading)">Scheduled Wakes</h2>
+                <button onclick="closeSchedulesModal()" class="p-1.5 rounded-lg transition-colors" style="color: var(--text-muted)" onmouseenter="this.style.background='var(--bg-card-inner)'" onmouseleave="this.style.background='transparent'">&times;</button>
+            </div>
+
+            <!-- Schedule List -->
+            <div id="schedule-list" class="flex flex-col gap-2 overflow-y-auto flex-1 min-h-0 mb-4">
+                <div class="empty-schedules">No schedules yet.</div>
+            </div>
+
+            <!-- Add Form -->
+            <div class="border-t pt-4 flex flex-col gap-3" style="border-color: var(--border)">
+                <div class="flex flex-wrap gap-2 items-end">
+                    <select id="sched-host" class="flex-1 min-w-[120px] py-2 px-3 rounded-xl text-sm border" style="background: var(--bg-card-inner); color: var(--text); border-color: var(--border);">
+                        <option value="">Select host...</option>
+                    </select>
+                    <input id="sched-time" type="time" value="09:00" class="py-2 px-3 rounded-xl text-sm border" style="background: var(--bg-card-inner); color: var(--text); border-color: var(--border);">
+                    <button onclick="addSchedule()" class="py-2 px-5 rounded-xl text-sm font-bold whitespace-nowrap" style="background: var(--accent); color: #fff;">Add</button>
+                </div>
+                <div class="flex items-center gap-3 flex-wrap">
+                    <span class="text-xs font-medium" style="color: var(--text-muted)">Days:</span>
+                    <div class="day-checkboxes" id="sched-days">
+                        <label><input type="checkbox" value="1" checked>M</label>
+                        <label><input type="checkbox" value="2" checked>T</label>
+                        <label><input type="checkbox" value="3" checked>W</label>
+                        <label><input type="checkbox" value="4" checked>T</label>
+                        <label><input type="checkbox" value="5" checked>F</label>
+                        <label><input type="checkbox" value="6">S</label>
+                        <label><input type="checkbox" value="0">S</label>
+                    </div>
+                    <button id="sched-quick-daily" onclick="setSchedDays('daily')" class="text-xs px-2 py-1 rounded-lg border font-medium" style="color: var(--text-muted); border-color: var(--border);">Daily</button>
+                    <button id="sched-quick-weekdays" onclick="setSchedDays('weekdays')" class="text-xs px-2 py-1 rounded-lg border font-medium" style="background: var(--accent-bg); color: var(--accent); border-color: var(--accent-border);">Weekdays</button>
+                </div>
             </div>
         </div>
     </div>
@@ -639,6 +825,127 @@
             toastTimer = setTimeout(() => {
                 statusMsg.className = 'fixed bottom-8 left-1/2 z-50 min-w-[320px] max-w-[90%] p-4 rounded-xl shadow-2xl text-center text-sm font-bold border backdrop-blur-xl transition-all duration-300 toast-enter pointer-events-none';
             }, 3500);
+        }
+
+        // ── Schedule Management ──
+        let schedules = [];
+
+        async function loadSchedules() {
+            try {
+                const res = await fetch('/api/schedules');
+                schedules = await res.json();
+                renderSchedules();
+            } catch { /* ignore */ }
+        }
+
+        function daysLabel(days) {
+            if (!days || days.length === 0) return 'Daily';
+            const names = {0:'Sun',1:'Mon',2:'Tue',3:'Wed',4:'Thu',5:'Fri',6:'Sat'};
+            const isWeekdays = days.length === 5 && [1,2,3,4,5].every(d => days.includes(d));
+            if (isWeekdays) return 'Weekdays';
+            return days.map(d => names[d] || d).join(', ');
+        }
+
+        function timeLabel(t) {
+            const [h, m] = t.split(':').map(Number);
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const h12 = h % 12 || 12;
+            return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+        }
+
+        function renderSchedules() {
+            const list = document.getElementById('schedule-list');
+            if (!schedules.length) {
+                list.innerHTML = '<div class="empty-schedules">No schedules yet. Add one below.</div>';
+                return;
+            }
+            list.innerHTML = schedules.map(s => {
+                const isOn = s.enabled !== false;
+                return `<div class="schedule-item" data-id="${esc(s.id)}">
+                    <div class="sched-info">
+                        <div class="sched-host">${esc(s.hostLabel || s.hostUuid)}</div>
+                        <div class="sched-detail">${timeLabel(s.time)} &middot; ${daysLabel(s.days)}</div>
+                        ${s.lastFired ? `<div class="sched-last">Last fired ${new Date(s.lastFired).toLocaleString()}</div>` : ''}
+                    </div>
+                    <button class="sched-toggle ${isOn ? 'on' : 'off'}" onclick="toggleSchedule('${esc(s.id)}', ${!isOn})" title="${isOn ? 'Disable' : 'Enable'}"></button>
+                    <button class="sched-del" onclick="deleteSchedule('${esc(s.id)}')" title="Delete schedule">&times;</button>
+                </div>`;
+            }).join('');
+        }
+
+        async function addSchedule() {
+            const select = document.getElementById('sched-host');
+            const hostUuid = select.value;
+            const time = document.getElementById('sched-time').value;
+            if (!hostUuid || !time) { showToast('Select a host and time.', 'info'); return; }
+
+            // Get host label
+            const host = hosts.find(h => h.uuid === hostUuid);
+            const hostLabel = host ? (host.descr || host.hostname || 'Unknown') : 'Unknown';
+
+            // Get selected days
+            const dayChecks = document.querySelectorAll('#sched-days input[type="checkbox"]:checked');
+            const days = Array.from(dayChecks).map(c => parseInt(c.value));
+            // If all 7 checked, set to empty for "Daily"
+            const finalDays = days.length === 7 ? [] : days;
+
+            try {
+                const res = await fetch('/api/schedules', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ hostUuid, hostLabel, time, days: finalDays, label: '' })
+                });
+                if (res.ok) {
+                    await loadSchedules();
+                    showToast(`Schedule added for ${hostLabel}.`, 'success');
+                } else {
+                    showToast('Failed to add schedule.', 'error');
+                }
+            } catch { showToast('Network error.', 'error'); }
+        }
+
+        async function toggleSchedule(id, enable) {
+            try {
+                await fetch(`/api/schedules/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ enabled: enable })
+                });
+                await loadSchedules();
+            } catch { /* ignore */ }
+        }
+
+        async function deleteSchedule(id) {
+            try {
+                await fetch(`/api/schedules/${id}`, { method: 'DELETE' });
+                await loadSchedules();
+            } catch { /* ignore */ }
+        }
+
+        function setSchedDays(mode) {
+            const checks = document.querySelectorAll('#sched-days input[type="checkbox"]');
+            const quickBtns = [document.getElementById('sched-quick-daily'), document.getElementById('sched-quick-weekdays')];
+            quickBtns.forEach(b => { b.style.background = 'transparent'; b.style.color = 'var(--text-muted)'; b.style.borderColor = 'var(--border)'; });
+            if (mode === 'daily') {
+                checks.forEach(c => c.checked = true);
+                document.getElementById('sched-quick-daily').style.cssText = 'background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border);';
+            } else {
+                checks.forEach(c => c.checked = [1,2,3,4,5].includes(parseInt(c.value)));
+                document.getElementById('sched-quick-weekdays').style.cssText = 'background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border);';
+            }
+        }
+
+        function openSchedulesModal() {
+            // Populate host dropdown
+            const select = document.getElementById('sched-host');
+            select.innerHTML = '<option value="">Select host...</option>' +
+                hosts.map(h => `<option value="${esc(h.uuid)}">${esc(h.descr || h.hostname || 'Unknown')}</option>`).join('');
+            loadSchedules();
+            document.getElementById('schedules-modal').classList.add('open');
+        }
+
+        function closeSchedulesModal() {
+            document.getElementById('schedules-modal').classList.remove('open');
         }
 
         // ── Init ──
