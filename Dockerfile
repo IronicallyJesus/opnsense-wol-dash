@@ -11,6 +11,7 @@ COPY --from=build /app/node_modules ./node_modules
 COPY server.js package.json ./
 COPY lib/ ./lib/
 COPY public/ ./public/
+RUN mkdir -p /app/data && chown -R node:node /app/data
 
 EXPOSE 3000
 USER node
