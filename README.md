@@ -115,18 +115,38 @@ docker run -d -p 3000:3000 -e DEMO_MODE=true opnsense-wol
 
 ### Docker Compose
 
-```sh
-# Run in demo mode (no OPNsense required)
-docker compose up -d
+The fastest way to run — drop this in as `docker-compose.yml`:
 
-# Run with real OPNsense (edit docker-compose.yml first)
-OPNSENSE_URL=https://opnsense.lan \
-OPNSENSE_API_KEY=*** \
-OPNSENSE_API_SECRET=*** \
-docker compose up -d
+```yaml
+services:
+  opnsense-wol:
+    image: opnsense-wol
+    build: .
+    container_name: opnsense-wol
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # ── Demo mode (no OPNsense required) ──
+      DEMO_MODE: "true"
+
+      # ── Production: uncomment and fill in your OPNsense API credentials ──
+      # OPNSENSE_URL: "https://opnsense.lan"
+      # OPNSENSE_API_KEY: "your-api-key"
+      # OPNSENSE_API_SECRET: "your-api-secret"
+
+      # ── Optional ──
+      # PORT: "3000"
+      # DATA_DIR: "/data"
+      # VERIFY_SSL: "false"
+    volumes:
+      - wol_data:/data
+
+volumes:
+  wol_data:
 ```
 
-Or edit `docker-compose.yml` directly to set environment variables for production.
+For **production**, uncomment the OPNsense credentials and set `DEMO_MODE: "false"`.
 
 > **Note:** Status is determined via OPNsense's ARP table (API), not ICMP — no special network config or host mode needed.
 
