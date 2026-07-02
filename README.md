@@ -1,23 +1,8 @@
-# OPNsense WOL v3
+# OPNsense WOL
 
 ![Dashboard Grid View](./public/screenshot-grid.png) *Grid view* | ![Dashboard Table View](./public/screenshot-table.png) *Table view*
 
-A lightweight web dashboard for waking devices on your network through the OPNsense WOL plugin API. v3 adds a compact table/grid view toggle and live ping latency (RTT) display. Built with Express.js and Tailwind CSS.
-
-## What's New in v3
-
-- **Table/Grid View Toggle** — Switch between compact card grid and data-table view. Table view shows all hosts in sortable columns with Host, Interface, MAC, IP, Latency, Last Wake, and Action columns. Preference persisted in localStorage.
-- **Ping Latency (RTT)** — Live round-trip time for every online host, fetched via system `ping` and cached for 60 seconds. Color-coded badges (fast/green, slow/yellow, timeout/grey) in both views.
-- Everything from v2.3 is preserved: ARP-based host status, parallel data loading, theme selector, wake history, demo mode, and Docker support.
-
-### What's New in v2.3 (ARP-Based Status)
-
-- **ARP-Based Status** — Host online/offline is determined directly from the OPNsense ARP table (MAC-level presence). No IP mapping, no ping, no firewall rules.
-- **No INTERFACE_MAP** — Friendly interface names (e.g. "HSD", "SVRS") come directly from the OPNsense WOL API's `%interface` field — no manual mapping.
-- **No HOST_IPS** — Status works automatically for every WOL host, no IP configuration required.
-- **Parallel Data Loading** — Host list and ARP status fetch concurrently for faster page loads.
-- **Status Embedded in Hosts** — Online indicators are part of `/api/hosts` response — no separate `/api/status` call.
-- **Minimal Privileges** — Only **WOL** privilege needed (covers host listing, wake, and ARP status)
+A lightweight web dashboard for waking devices on your network through the OPNsense WOL plugin API. Features live ping latency (RTT), a compact table/grid view toggle, and ARP-based host status. Built with Express.js and Tailwind CSS.
 
 ## Features
 
@@ -33,9 +18,9 @@ A lightweight web dashboard for waking devices on your network through the OPNse
 | | **Wake History** | Tracks when each host was last woken |
 | | **Responsive Design** | Card layout adapts from 1 to 3 columns; table view is scrollable on mobile |
 | | **Auto-Refresh** | Polls OPNsense and refreshes status every 30 seconds; RTT re-fetches every 30s |
+| | **Scheduled Wake** | Schedule automatic wake-ups by time and day-of-week |
 | | **Sanitized Display** | Host descriptions and MAC addresses are HTML-escaped |
 | | **Dockerized** | Production Docker build with Alpine Node.js |
-| | **CI/CD** | Gitea Actions workflow builds and publishes to container registry on version tags |
 
 ## How It Works
 
@@ -50,6 +35,8 @@ A lightweight web dashboard for waking devices on your network through the OPNse
                    POST /api/wake-all       │  POST /api/wol/wol/          │
                    GET  /api/ping/:uuid     │    searchHost / set          │
                    GET  /api/ping           └──────────────────────────────┘
+                   GET  /api/schedules
+                   POST /api/schedules
 ```
 
 The Express server acts as a bridge between the browser and OPNsense:
@@ -58,6 +45,7 @@ The Express server acts as a bridge between the browser and OPNsense:
 2. **Wake host** — sends magic packet via OPNsense `wol/set`
 3. **Status** — embedded in `/api/hosts` response via the ARP lookup — no separate status endpoint
 4. **Ping latency** — system `ping` to each host's IP, cached in memory for 60 seconds
+5. **Scheduled wake** — in-process scheduler checks enabled schedules every 60 seconds and fires wake requests
 
 ## Getting Started
 
@@ -89,6 +77,7 @@ The server is configured entirely through environment variables:
 | `PORT` | ❌ | `3000` | Server listen port |
 | `VERIFY_SSL` | ❌ | `false` | Set to `"true"` to verify SSL cert |
 | `DEMO_MODE` | ❌ | `false` | Set to `"true"` to run with mock data — no OPNsense needed |
+| `DATA_DIR` | ❌ | `./data` | Directory for persistent data (schedules, wake history) |
 
 ### Demo Mode
 
@@ -99,7 +88,7 @@ DEMO_MODE=true node server.js
 # → http://localhost:3000
 ```
 
-RTT is simulated with random values (50–500ms) for online hosts in demo mode.
+RTT is simulated with random values (5–20ms) for online hosts in demo mode.
 
 ### Development
 
@@ -150,6 +139,10 @@ Or edit `docker-compose.yml` directly to set environment variables for productio
 | `GET` | `/api/ping` | Batch ping — returns cached RTT for all hosts |
 | `POST` | `/api/wake/:uuid` | Send wake signal to a host by UUID |
 | `POST` | `/api/wake-all` | Send wake signal to all configured hosts |
+| `GET` | `/api/schedules` | List all scheduled wake tasks |
+| `POST` | `/api/schedules` | Create a scheduled wake |
+| `PUT` | `/api/schedules/:id` | Update a scheduled wake |
+| `DELETE` | `/api/schedules/:id` | Delete a scheduled wake |
 | `GET` | `/health` | Health check endpoint |
 
 ## Themes
@@ -178,17 +171,19 @@ Your view preference persists in localStorage.
 ## Project Structure
 
 ```
-├── server.js            # Express server (API proxy + ARP-based status + ping)
+├── server.js              # Express server (API proxy + scheduler + ping)
+├── lib/
+│   └── scheduler.js       # In-process scheduled wake module
 ├── public/
-│   ├── index.html       # Frontend (Tailwind CSS via CDN, themes, wake history)
+│   ├── index.html         # Frontend (Tailwind CSS via CDN, themes, wake history)
 │   ├── screenshot-grid.png
 │   └── screenshot-table.png
-├── Dockerfile           # Production build (Alpine Node.js)
-├── docker-compose.yml   # One-command demo or production deployment
-├── .env.example         # Environment variable template
+├── Dockerfile             # Production build (Alpine Node.js)
+├── docker-compose.yml     # One-command demo or production deployment
+├── .env.example           # Environment variable template
 ├── .dockerignore
 ├── package.json
-└── .gitea/workflows/    # CI/CD (Docker build + publish on v* tags)
+└── .gitea/workflows/      # CI/CD (Docker build + publish on v* tags)
 ```
 
 ## License

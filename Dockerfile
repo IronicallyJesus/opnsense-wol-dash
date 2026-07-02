@@ -9,6 +9,7 @@ FROM node:22-alpine
 WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY server.js package.json ./
+COPY lib/ ./lib/
 COPY public/ ./public/
 
 EXPOSE 3000
