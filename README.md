@@ -4,6 +4,10 @@
 
 A lightweight web dashboard for waking devices on your network through the OPNsense WOL plugin API. Features live ping latency (RTT), a compact table/grid view toggle, and ARP-based host status. Built with Express.js and Tailwind CSS.
 
+## Security
+
+> ⚠️ **This app has no built-in authentication.** Every API endpoint — including `/api/wake/*` (which sends magic packets) — is open to anyone who can reach the server. For production use, deploy **exclusively behind a reverse proxy** (OPNsense HAProxy, Nginx, Caddy, etc.) with authentication. The app is designed to run on a trusted LAN or VPN.
+
 ## Features
 
 | Feature | Description |
