@@ -1,7 +1,7 @@
 {
   "name": "opnsense-wol-web",
-  "version": "2.0.0",
-  "description": "WOL dashboard for OPNsense with host status checks and theme selector",
+  "version": "3.0.0",
+  "description": "WOL dashboard for OPNsense with host status checks, table/grid view toggle, and ping latency display",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
