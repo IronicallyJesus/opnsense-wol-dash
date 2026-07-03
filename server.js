@@ -38,7 +38,7 @@ const DEMO_HOSTS = [
     '%interface': 'HSD',
     friendly_interface: 'HSD',
     online: true,
-    ip: '198.51.100.50'
+    ip: '192.168.0.50'
   },
   {
     uuid: 'demo-uuid-2',
@@ -57,7 +57,7 @@ const DEMO_HOSTS = [
     '%interface': 'SVRS',
     friendly_interface: 'SVRS',
     online: true,
-    ip: '198.51.100.3'
+    ip: '192.168.0.3'
   },
   {
     uuid: 'demo-uuid-4',
@@ -67,7 +67,7 @@ const DEMO_HOSTS = [
     '%interface': 'IOT',
     friendly_interface: 'IOT',
     online: true,
-    ip: '198.51.100.100'
+    ip: '192.168.0.100'
   },
   {
     uuid: 'demo-uuid-5',
