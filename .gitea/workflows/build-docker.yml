@@ -8,18 +8,18 @@ on:
 
 jobs:
   build:
-    uses: ./.gitea/workflows/build-image.yml
+    uses: twk95/actions/.gitea/workflows/build-image.yml@bcb802d4b14904e6164ccaa7dca0c841f1566cd6
     secrets: inherit
   deploy-main:
     needs: build
-    uses: ./.gitea/workflows/dockge-deploy.yml
+    uses: twk95/actions/.gitea/workflows/dockge-deploy.yml@bcb802d4b14904e6164ccaa7dca0c841f1566cd6
     with:
       service_name: opnsense-wol
       stacks_dir: /opt/stacks/opnsense-wol
     secrets: inherit
   deploy-demo:
     needs: build
-    uses: ./.gitea/workflows/dockge-deploy.yml
+    uses: twk95/actions/.gitea/workflows/dockge-deploy.yml@bcb802d4b14904e6164ccaa7dca0c841f1566cd6
     with:
       service_name: opnsense-wol-demo
       stacks_dir: /opt/stacks/opnsense-wol
