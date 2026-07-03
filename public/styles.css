@@ -1094,8 +1094,13 @@ body {
 .rtt-high { color: #f87171; }
 .rtt-none { color: var(--text-muted); }
 
-/* ── Mobile: Schedule Toggle ── */
+/* ── Mobile ── */
 @media (max-width: 640px) {
+  /* Right-align all controls so Wake All and Refresh share the same right edge */
+  .header-controls {
+    justify-content: flex-end;
+  }
+
   .modal-panel {
     padding: 1.25rem;
     margin: 0 0.75rem;
