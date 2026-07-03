@@ -426,6 +426,12 @@ body {
   flex-shrink: 0;
 }
 
+.host-card-name-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .host-card-name {
   font-weight: 700;
   font-size: 1.125rem;
