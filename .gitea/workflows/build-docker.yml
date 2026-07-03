@@ -1,5 +1,6 @@
 name: Build and Push Docker Image
 run-name: Build and Push Docker Image for ${{ gitea.ref_name }} by @${{ gitea.actor }}
+
 on:
   push:
     tags:
@@ -7,18 +8,18 @@ on:
 
 jobs:
   build:
-    uses: twk95/actions/.gitea/workflows/build-image.yml@main
+    uses: ./.gitea/workflows/build-image.yml
     secrets: inherit
   deploy-main:
     needs: build
-    uses: twk95/actions/.gitea/workflows/dockge-deploy.yml@main
+    uses: ./.gitea/workflows/dockge-deploy.yml
     with:
       service_name: opnsense-wol
       stacks_dir: /opt/stacks/opnsense-wol
     secrets: inherit
   deploy-demo:
     needs: build
-    uses: twk95/actions/.gitea/workflows/dockge-deploy.yml@main
+    uses: ./.gitea/workflows/dockge-deploy.yml
     with:
       service_name: opnsense-wol-demo
       stacks_dir: /opt/stacks/opnsense-wol
