@@ -395,10 +395,10 @@ app.get('/health', (req, res) => res.send('OK'));
 
 app.listen(PORT, async () => {
   if (DEMO_MODE) {
-    console.log(`OPNsense WOL v3 DEMO running on http://localhost:${PORT}`);
+    console.log(`OPNsense WOL DEMO running on http://localhost:${PORT}`);
     console.log(`Serving ${DEMO_HOSTS.length} mock hosts with status via ARP simulation`);
   } else {
-    console.log(`OPNsense WOL v3 running on port ${PORT}`);
+    console.log(`OPNsense WOL running on port ${PORT}`);
     if (API_KEY) {
       console.log('OPNsense API connected — status via ARP table, interface names via %interface');
     }
