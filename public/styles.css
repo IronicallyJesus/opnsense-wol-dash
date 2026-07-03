@@ -1089,7 +1089,7 @@ body {
 }
 
 /* ── RTT Color Classes ── */
-.rtt-low { color: #4ade80; }
+.rtt-low { color: var(--text); }
 .rtt-mid { color: #fbbf24; }
 .rtt-high { color: #f87171; }
 .rtt-none { color: var(--text-muted); }
