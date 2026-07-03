@@ -10,6 +10,7 @@ jobs:
     uses: twk95/actions/.gitea/workflows/build-and-deploy.yml@main
     with:
       service_name: opnsense-wol
+      stacks_dir: /opt/stacks/opnsense-wol
     secrets: inherit
 
   deploy-demo:
@@ -17,4 +18,5 @@ jobs:
     uses: twk95/actions/.gitea/workflows/build-and-deploy.yml@main
     with:
       service_name: opnsense-wol-demo
+      stacks_dir: /opt/stacks/opnsense-wol
     secrets: inherit
