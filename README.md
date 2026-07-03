@@ -2,7 +2,9 @@
 
 ![Dashboard Grid View](./public/screenshot-grid.png) *Grid view* | ![Dashboard Table View](./public/screenshot-table.png) *Table view*
 
-A lightweight web dashboard for waking devices on your network through the OPNsense WOL plugin API. Features live ping latency (RTT), a compact table/grid view toggle, and ARP-based host status. Built with Express.js and Tailwind CSS.
+A lightweight web dashboard for waking devices on your network through the OPNsense WOL plugin API. Features live ping latency (RTT), a compact table/grid view toggle, and ARP-based host status. Built with Express.js.
+
+> 🌐 **Live Demo:** [https://wol-demo.twk95.com/](https://wol-demo.twk95.com/) — Fully functional dashboard with mock hosts, no OPNsense required.
 
 ## Security
 
@@ -54,10 +56,9 @@ The Express server acts as a bridge between the browser and OPNsense:
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+
+- [Docker](https://docs.docker.com/engine/install/) & [Docker Compose](https://docs.docker.com/compose/install/)
 - OPNsense with the **os-wol** plugin installed and API access enabled
 - OPNsense API key with the **WOL** privilege (`wol/searchHost` and `wol/set`)
-- Docker (optional, for containerized deployment)
 
 ### OPNsense API Permissions
 
@@ -88,26 +89,11 @@ The server is configured entirely through environment variables:
 Run a fully functional dashboard with 6 mock hosts (3 online, 3 offline) — no OPNsense connection required:
 
 ```sh
-DEMO_MODE=true node server.js
+docker run -d -p 3000:3000 -e DEMO_MODE=true opnsense-wol
 # → http://localhost:3000
 ```
 
-RTT is simulated with random values (5–20ms) for online hosts in demo mode.
-
-### Development
-
-```sh
-git clone https://git.twk95.com/twk95/opnsense-wol.git
-cd opnsense-wol
-npm install
-
-OPNSENSE_URL=https://opnsense.lan \
-OPNSENSE_API_KEY=your-key \
-OPNSENSE_API_SECRET=your-secret \
-node server.js
-```
-
-Open `http://localhost:3000` to view the dashboard.
+Or use [Docker Compose](#docker-compose) with `DEMO_MODE: "true"`. RTT is simulated with random values (5–20ms) for online hosts in demo mode.
 
 ### Docker
 
