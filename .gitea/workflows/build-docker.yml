@@ -6,16 +6,24 @@ on:
       - 'v*.*.*'
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     uses: twk95/actions/.gitea/workflows/build-and-deploy.yml@main
+    with:
+      service_name: opnsense-wol
+      deploy: false
+    secrets: inherit
+
+  deploy-main:
+    needs: build-and-push
+    uses: twk95/actions/.gitea/workflows/dockge-deploy.yml@main
     with:
       service_name: opnsense-wol
       stacks_dir: /opt/stacks/opnsense-wol
     secrets: inherit
 
   deploy-demo:
-    needs: build-and-deploy
-    uses: twk95/actions/.gitea/workflows/build-and-deploy.yml@main
+    needs: build-and-push
+    uses: twk95/actions/.gitea/workflows/dockge-deploy.yml@main
     with:
       service_name: opnsense-wol-demo
       stacks_dir: /opt/stacks/opnsense-wol
