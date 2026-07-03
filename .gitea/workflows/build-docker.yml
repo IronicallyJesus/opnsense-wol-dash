@@ -7,24 +7,63 @@ on:
 
 jobs:
   build-and-push:
-    uses: twk95/actions/.gitea/workflows/build-and-deploy.yml@main
-    with:
-      service_name: opnsense-wol
-      deploy: false
-    secrets: inherit
+    runs-on: runner-latest
+    container:
+      image: docker:latest
+    steps:
+      - name: Install Dependencies
+        run: apk add --no-cache git nodejs npm
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Gitea Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ gitea.server_url }}
+          username: ${{ gitea.actor }}
+          password: ${{ secrets.PUSH_TOKEN }}
+
+      - name: Prepare image tags
+        id: prep
+        run: |
+          HOST=$(echo ${{ gitea.server_url }} | sed -e 's|^https://||')
+          VERSION=${{ gitea.ref_name }}
+          echo "tags=${HOST}/${{ gitea.repository }}:${VERSION},${HOST}/${{ gitea.repository }}:latest" >> $GITEA_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: ${{ steps.prep.outputs.tags }}
 
   deploy-main:
     needs: build-and-push
-    uses: twk95/actions/.gitea/workflows/dockge-deploy.yml@main
-    with:
-      service_name: opnsense-wol
-      stacks_dir: /opt/stacks/opnsense-wol
-    secrets: inherit
+    runs-on: runner-latest
+    steps:
+      - name: Pull and restart opnsense-wol
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker exec dockge-dockge-1 sh -c 'cd /opt/stacks/opnsense-wol && docker compose pull opnsense-wol && docker compose up -d --no-deps --remove-orphans opnsense-wol'
 
   deploy-demo:
     needs: build-and-push
-    uses: twk95/actions/.gitea/workflows/dockge-deploy.yml@main
-    with:
-      service_name: opnsense-wol-demo
-      stacks_dir: /opt/stacks/opnsense-wol
-    secrets: inherit
+    runs-on: runner-latest
+    steps:
+      - name: Pull and restart opnsense-wol-demo
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker exec dockge-dockge-1 sh -c 'cd /opt/stacks/opnsense-wol && docker compose pull opnsense-wol-demo && docker compose up -d --no-deps --remove-orphans opnsense-wol-demo'
