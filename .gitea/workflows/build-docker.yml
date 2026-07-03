@@ -14,13 +14,7 @@ jobs:
 
   deploy-demo:
     needs: build-and-deploy
-    runs-on: runner-latest
-    steps:
-      - name: Deploy demo service via Dockge
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            docker exec dockge-dockge-1 sh -c 'cd /opt/stacks/web-stack && docker compose pull opnsense-wol-demo && docker compose up -d --no-deps --remove-orphans opnsense-wol-demo'
+    uses: twk95/actions/.gitea/workflows/build-and-deploy.yml@main
+    with:
+      service_name: opnsense-wol-demo
+    secrets: inherit
