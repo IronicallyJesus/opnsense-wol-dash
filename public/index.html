@@ -4,424 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OPNsense WOL v2</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* ── Theme System ── */
-        :root {
-            --bg: #0f172a;
-            --bg-card: #1e293b;
-            --bg-card-inner: #0f172a;
-            --border: #334155;
-            --border-hover: #475569;
-            --text: #e2e8f0;
-            --text-muted: #94a3b8;
-            --text-heading: #f8fafc;
-            --accent: #0ea5e9;
-            --accent-bg: rgba(14, 165, 233, 0.1);
-            --accent-border: rgba(14, 165, 233, 0.2);
-            --accent-hover: #0284c7;
-            --icon-bg: rgba(51, 65, 85, 0.5);
-            --icon-border: rgba(71, 85, 105, 0.5);
-            --toast-success: rgba(6, 95, 70, 0.9);
-            --toast-error: rgba(127, 29, 29, 0.9);
-            --toast-info: rgba(30, 41, 59, 0.9);
-            --online: #22c55e;
-            --offline: #64748b;
-            --header-bg: transparent;
-        }
-
-        [data-theme="emerald"] {
-            --bg: #022c22;
-            --bg-card: #064e3b;
-            --bg-card-inner: #022c22;
-            --border: #065f46;
-            --border-hover: #047857;
-            --text: #d1fae5;
-            --text-muted: #6ee7b7;
-            --text-heading: #ecfdf5;
-            --accent: #10b981;
-            --accent-bg: rgba(16, 185, 129, 0.1);
-            --accent-border: rgba(16, 185, 129, 0.2);
-            --accent-hover: #059669;
-            --icon-bg: rgba(6, 78, 59, 0.5);
-            --icon-border: rgba(4, 120, 87, 0.5);
-            --online: #34d399;
-            --offline: #6b7280;
-        }
-
-        [data-theme="violet"] {
-            --bg: #1e1b4b;
-            --bg-card: #312e81;
-            --bg-card-inner: #1e1b4b;
-            --border: #4338ca;
-            --border-hover: #4f46e5;
-            --text: #e0e7ff;
-            --text-muted: #a5b4fc;
-            --text-heading: #eef2ff;
-            --accent: #818cf8;
-            --accent-bg: rgba(99, 102, 241, 0.15);
-            --accent-border: rgba(99, 102, 241, 0.25);
-            --accent-hover: #6366f1;
-            --icon-bg: rgba(49, 46, 129, 0.5);
-            --icon-border: rgba(67, 56, 202, 0.5);
-            --online: #a78bfa;
-            --offline: #6b7280;
-        }
-
-        [data-theme="rose"] {
-            --bg: #1c1917;
-            --bg-card: #292524;
-            --bg-card-inner: #1c1917;
-            --border: #44403c;
-            --border-hover: #57534e;
-            --text: #fef2f2;
-            --text-muted: #fecaca;
-            --text-heading: #fff1f2;
-            --accent: #f43f5e;
-            --accent-bg: rgba(244, 63, 94, 0.1);
-            --accent-border: rgba(244, 63, 94, 0.2);
-            --accent-hover: #e11d48;
-            --icon-bg: rgba(68, 64, 60, 0.5);
-            --icon-border: rgba(87, 83, 78, 0.5);
-            --online: #34d399;
-            --offline: #6b7280;
-        }
-
-        [data-theme="light"] {
-            --bg: #f8fafc;
-            --bg-card: #ffffff;
-            --bg-card-inner: #f1f5f9;
-            --border: #e2e8f0;
-            --border-hover: #cbd5e1;
-            --text: #334155;
-            --text-muted: #64748b;
-            --text-heading: #0f172a;
-            --accent: #0ea5e9;
-            --accent-bg: rgba(14, 165, 233, 0.08);
-            --accent-border: rgba(14, 165, 233, 0.15);
-            --accent-hover: #0284c7;
-            --icon-bg: #f1f5f9;
-            --icon-border: #e2e8f0;
-            --online: #16a34a;
-            --offline: #94a3b8;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-        }
-
-        .toast-enter { opacity: 0; transform: translateX(-50%) translateY(20px); }
-        .toast-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-
-        /* Status pulse animation for online hosts */
-        .status-online { animation: pulse-green 2s ease-in-out infinite; }
-        @keyframes pulse-green {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-            50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-        }
-
-        /* ── Table View ── */
-        .view-table.host-grid {
-            display: block;
-        }
-        .view-table table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.8125rem;
-        }
-        .view-table th {
-            text-align: left;
-            padding: 0.625rem 0.75rem;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-            border-bottom: 1px solid var(--border);
-            white-space: nowrap;
-            cursor: pointer;
-            user-select: none;
-        }
-        .view-table th:hover { color: var(--text); }
-        .view-table td {
-            padding: 0.5rem 0.75rem;
-            border-bottom: 1px solid var(--border);
-            white-space: nowrap;
-            vertical-align: middle;
-        }
-        .view-table tr:hover td {
-            background: var(--bg-card-inner);
-        }
-        .view-table tr:last-child td { border-bottom: none; }
-        .view-table .td-name {
-            font-weight: 600;
-            color: var(--text-heading);
-        }
-        .view-table .td-iface {
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            letter-spacing: 0.03em;
-        }
-        .view-table .td-mac {
-            font-family: 'SF Mono', 'Fira Code', monospace;
-            font-size: 0.75rem;
-            color: var(--text);
-            letter-spacing: 0.02em;
-        }
-        .view-table .td-wake {
-            text-align: right;
-        }
-        .view-table .btn-wake-table {
-            padding: 0.375rem 1rem;
-            border-radius: 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            transition: background 0.15s;
-            white-space: nowrap;
-        }
-        .view-table .btn-wake-table:hover { background: var(--accent-hover); }
-        .view-table .btn-wake-table:active { transform: scale(0.97); }
-
-        /* View toggle button */
-        .view-toggle {
-            display: inline-flex;
-            border-radius: 0.75rem;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            background: var(--bg-card);
-        }
-        .view-toggle button {
-            padding: 0.5rem 0.875rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            transition: all 0.15s;
-        }
-        .view-toggle button.active {
-            background: var(--accent);
-            color: #fff;
-        }
-        .view-toggle button:not(.active):hover {
-            color: var(--text);
-            background: var(--bg-card-inner);
-        }
-        .view-toggle button:first-child { border-right: 1px solid var(--border); }
-
-        /* ── Schedules Modal ── */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 40;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.6);
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
-        }
-        .modal-overlay.open {
-            opacity: 1;
-            visibility: visible;
-        }
-        .modal-panel {
-            width: 100%;
-            max-width: 480px;
-            margin: 0 1rem;
-            max-height: 80vh;
-            display: flex;
-            flex-direction: column;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            border: 1px solid var(--border);
-            background: var(--bg-card);
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-            transform: scale(0.95);
-            transition: transform 0.2s;
-        }
-        .modal-overlay.open .modal-panel {
-            transform: scale(1);
-        }
-        .schedule-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.75rem;
-            border-radius: 0.75rem;
-            border: 1px solid var(--border);
-            background: var(--bg-card-inner);
-            transition: border-color 0.15s;
-        }
-        .schedule-item:hover {
-            border-color: var(--border-hover);
-        }
-        .schedule-item .sched-info {
-            flex: 1;
-            min-width: 0;
-        }
-        .schedule-item .sched-host {
-            font-weight: 600;
-            font-size: 0.875rem;
-            color: var(--text-heading);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .schedule-item .sched-detail {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-top: 0.125rem;
-        }
-        .schedule-item .sched-last {
-            font-size: 0.65rem;
-            color: var(--text-muted);
-            opacity: 0.6;
-        }
-        .sched-toggle {
-            width: 2.25rem;
-            height: 1.25rem;
-            border-radius: 999px;
-            border: none;
-            cursor: pointer;
-            position: relative;
-            transition: background 0.2s;
-            flex-shrink: 0;
-            margin: 0 0.5rem;
-        }
-        .sched-toggle::after {
-            content: '';
-            position: absolute;
-            top: 0.125rem;
-            left: 0.125rem;
-            width: 1rem;
-            height: 1rem;
-            border-radius: 999px;
-            background: #fff;
-            transition: transform 0.2s;
-        }
-        .sched-toggle.on { background: var(--accent); }
-        .sched-toggle.on::after { transform: translateX(1rem); }
-        .sched-toggle.off { background: #475569; }
-        .sched-toggle.off::after { transform: translateX(0); }
-        .sched-del {
-            padding: 0.375rem 0.625rem;
-            border-radius: 0.5rem;
-            font-size: 0.75rem;
-            border: 1px solid transparent;
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.15s;
-            flex-shrink: 0;
-        }
-        .sched-del:hover {
-            color: #fca5a5;
-            border-color: rgba(239,68,68,0.3);
-            background: rgba(239,68,68,0.1);
-        }
-        .day-checkboxes {
-            display: flex;
-            gap: 0.25rem;
-        }
-        .day-checkboxes label {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.125rem;
-            font-size: 0.65rem;
-            color: var(--text-muted);
-            cursor: pointer;
-        }
-        .day-checkboxes input[type="checkbox"] {
-            width: 1.25rem;
-            height: 1.25rem;
-            border-radius: 0.375rem;
-            cursor: pointer;
-            accent-color: var(--accent);
-        }
-        .empty-schedules {
-            text-align: center;
-            padding: 2rem 1rem;
-            color: var(--text-muted);
-            font-size: 0.875rem;
-        }
-
-        /* ── Mobile: Schedules Modal ── */
-        @media (max-width: 640px) {
-            .modal-panel {
-                padding: 1.25rem;
-                margin: 0 0.75rem;
-                max-height: 90vh;
-            }
-            .schedule-item {
-                padding: 0.625rem 0.75rem;
-            }
-            .sched-toggle {
-                width: 2rem;
-                height: 1.125rem;
-                margin: 0 0.5rem;
-            }
-            .sched-toggle::after {
-                width: 0.875rem;
-                height: 0.875rem;
-                top: 0.125rem;
-                left: 0.125rem;
-            }
-            .sched-toggle.on::after { transform: translateX(0.875rem); }
-            .sched-toggle.off::after { transform: translateX(0); }
-            .day-checkboxes {
-                gap: 0.25rem;
-            }
-            .day-checkboxes label {
-                font-size: 0.65rem;
-            }
-            .day-checkboxes input[type="checkbox"] {
-                width: 1.125rem;
-                height: 1.125rem;
-            }
-        }
-
-    </style>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/custom.css">
 </head>
-<body class="min-h-screen flex flex-col items-center py-10 px-4">
+<body class="app-wrapper">
 
-    <div class="w-full max-w-6xl mt-4 pb-20">
+    <main class="app-container">
         <!-- Header -->
-        <header class="flex flex-wrap justify-between items-center gap-4 mb-10 px-2">
-            <div>
-                <h1 class="text-3xl font-bold" style="color: var(--text-heading)">Network Wake</h1>
-                <p class="text-sm mt-2 ml-1" style="color: var(--text-muted)">Dashboard <span id="version-tag" class="text-xs opacity-60">v1.0.0</span></p>
+        <header class="header">
+            <div class="header-title">
+                <h1>Network Wake</h1>
+                <p>Dashboard <span class="version-tag" id="version-tag">v1.0.0</span></p>
             </div>
 
-            <div class="flex flex-wrap items-center gap-3 justify-start sm:justify-end">
+            <div class="header-controls">
                 <!-- Theme Selector -->
-                <div class="relative">
-                    <select id="theme-select"
-                        class="appearance-none py-2.5 pl-4 pr-10 rounded-xl text-sm font-medium cursor-pointer transition-colors"
-                        style="background: var(--bg-card); color: var(--text); border: 1px solid var(--border);"
-                        onchange="setTheme(this.value)">
+                <div class="theme-select-wrap">
+                    <select id="theme-select" class="theme-select" onchange="setTheme(this.value)">
                         <option value="slate">Slate Dark</option>
                         <option value="emerald">Emerald Dark</option>
                         <option value="violet">Violet Dark</option>
                         <option value="rose">Rose Dark</option>
                         <option value="light">Light</option>
                     </select>
-                    <!-- Custom dropdown arrow -->
-                    <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"
-                        width="14" height="14" viewBox="0 0 14 14" fill="none"
-                        style="stroke: var(--text); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7;">
-                        <path d="M3.5 5.25l3.5 3.5 3.5-3.5"/>
+                    <svg class="theme-select-arrow" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M3.5 5.25l3.5 3.5 3.5-3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
 
@@ -432,23 +39,20 @@
                 </div>
 
                 <!-- Wake All Button -->
-                <button id="wake-all-btn" onclick="wakeAll()" class="py-2.5 px-5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg transform active:scale-[0.98] ml-auto sm:ml-0"
-                    style="background: var(--accent); color: #fff;">
+                <button id="wake-all-btn" onclick="wakeAll()" class="btn-wake-all">
                     <span>Wake All</span>
                 </button>
 
                 <!-- Schedule Button + Refresh (same row on mobile) -->
-                <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end order-last sm:order-none">
-                    <button onclick="openSchedulesModal()" class="w-10 h-10 flex items-center justify-center rounded-xl transition-colors border shadow-lg" title="Scheduled wakes"
-                        style="background: var(--bg-card); color: var(--text-muted); border-color: var(--border);">
+                <div class="action-row">
+                    <button onclick="openSchedulesModal()" class="btn-icon" title="Scheduled wakes">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
                             <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                         </svg>
                     </button>
 
                     <!-- Refresh Button -->
-                    <button onclick="loadHosts()" class="w-10 h-10 flex items-center justify-center rounded-xl transition-colors border shadow-lg"
-                        style="background: var(--bg-card); color: var(--accent); border-color: var(--border);">
+                    <button onclick="loadHosts()" class="btn-icon btn-icon-refresh" title="Refresh">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
                             <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
                         </svg>
@@ -458,49 +62,52 @@
         </header>
 
         <!-- Last Updated + Auto-Refresh indicator -->
-        <div class="flex items-center justify-between px-2 mb-6">
-            <p class="text-xs" style="color: var(--text-muted)" id="last-updated"></p>
-            <p class="text-xs flex items-center gap-1" style="color: var(--text-muted)" id="status-indicator">
-                <span class="w-2 h-2 rounded-full" style="background: var(--offline)"></span>
-                status idle
+        <div class="status-bar">
+            <p class="status-bar-text" id="last-updated"></p>
+            <p class="status-indicator" id="status-indicator">
+                <span class="status-dot status-dot-offline" id="indicator-dot"></span>
+                <span id="indicator-text">status idle</span>
             </p>
         </div>
 
         <!-- Host Container -->
-        <div id="host-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 host-grid">
-            <div class="col-span-1 md:col-span-2 lg:col-span-3 flex justify-center py-20" style="color: var(--text-muted)">
-                Loading...
+        <div id="host-grid" class="host-grid">
+            <!-- Skeleton loading state (JS replaces this) -->
+            <div class="loading-state" id="loading-state">
+                <p>Loading...</p>
             </div>
         </div>
-    </div>
+    </main>
 
     <!-- ── Schedules Modal ── -->
     <div id="schedules-modal" class="modal-overlay" onclick="if(event.target===this)closeSchedulesModal()">
         <div class="modal-panel">
             <!-- Header -->
-            <div class="flex items-center justify-between mb-5">
-                <h2 class="text-lg font-bold" style="color: var(--text-heading)">Scheduled Wakes</h2>
-                <button onclick="closeSchedulesModal()" class="p-1.5 rounded-lg transition-colors" style="color: var(--text-muted)" onmouseenter="this.style.background='var(--bg-card-inner)'" onmouseleave="this.style.background='transparent'">&times;</button>
+            <div class="modal-header">
+                <h2>Scheduled Wakes</h2>
+                <button onclick="closeSchedulesModal()" class="modal-close">&times;</button>
             </div>
 
             <!-- Schedule List -->
-            <div id="schedule-list" class="flex flex-col gap-2 overflow-y-auto flex-1 min-h-0 mb-4">
-                <div class="empty-schedules">No schedules yet.</div>
+            <div class="modal-body">
+                <div id="schedule-list" class="modal-schedule-list">
+                    <div class="empty-schedules">No schedules yet.</div>
+                </div>
             </div>
 
             <!-- Add Form -->
-            <div class="border-t pt-4 flex flex-col gap-3" style="border-color: var(--border)">
-                <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-end">
-                    <select id="sched-host" class="w-full sm:flex-1 sm:min-w-[120px] py-2 px-3 rounded-xl text-sm border" style="background: var(--bg-card-inner); color: var(--text); border-color: var(--border);">
+            <div class="modal-form">
+                <div class="sched-form-row">
+                    <select id="sched-host" class="form-select">
                         <option value="">Select host...</option>
                     </select>
-                    <div class="flex gap-2 w-full sm:w-auto">
-                        <input id="sched-time" type="time" value="09:00" class="py-2 px-3 rounded-xl text-sm border" style="background: var(--bg-card-inner); color: var(--text); border-color: var(--border);">
-                        <button onclick="addSchedule()" class="py-2 px-5 rounded-xl text-sm font-bold whitespace-nowrap" style="background: var(--accent); color: #fff;">Add</button>
+                    <div class="sched-form-inline">
+                        <input id="sched-time" type="time" value="09:00" class="form-input">
+                        <button onclick="addSchedule()" class="btn-add-sched">Add</button>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 flex-wrap">
-                    <span class="text-xs font-medium" style="color: var(--text-muted)">Days:</span>
+                <div class="sched-days-row">
+                    <span class="sched-days-label">Days:</span>
                     <div class="day-checkboxes" id="sched-days">
                         <label><input type="checkbox" value="1" checked>M</label>
                         <label><input type="checkbox" value="2" checked>T</label>
@@ -510,9 +117,9 @@
                         <label><input type="checkbox" value="6">S</label>
                         <label><input type="checkbox" value="0">S</label>
                     </div>
-                    <div class="flex gap-2 w-full sm:w-auto sm:flex-initial">
-                        <button id="sched-quick-daily" onclick="setSchedDays('daily')" class="text-xs px-2.5 py-1.5 rounded-lg border font-medium" style="color: var(--text-muted); border-color: var(--border);">Daily</button>
-                        <button id="sched-quick-weekdays" onclick="setSchedDays('weekdays')" class="text-xs px-2.5 py-1.5 rounded-lg border font-medium" style="background: var(--accent-bg); color: var(--accent); border-color: var(--accent-border);">Weekdays</button>
+                    <div class="sched-form-inline">
+                        <button id="sched-quick-daily" onclick="setSchedDays('daily')" class="sched-quick-btn">Daily</button>
+                        <button id="sched-quick-weekdays" onclick="setSchedDays('weekdays')" class="sched-quick-btn active">Weekdays</button>
                     </div>
                 </div>
             </div>
@@ -520,13 +127,12 @@
     </div>
 
     <!-- Floating Toast -->
-    <div id="status-msg" class="fixed bottom-8 left-1/2 z-50 min-w-[320px] max-w-[90%] p-4 rounded-xl shadow-2xl text-center text-sm font-bold border backdrop-blur-xl transition-all duration-300 toast-enter pointer-events-none"></div>
+    <div id="status-msg" class="toast toast-hidden"></div>
 
     <script>
         // ── State ──
         const grid = document.getElementById('host-grid');
         const statusMsg = document.getElementById('status-msg');
-        const tableEl = document.getElementById('host-table');
         let hosts = [];
         let rttData = {};       // { uuid: rtt_ms }
         let refreshInterval = null;
@@ -578,7 +184,15 @@
         // ── Sanitize ──
         function esc(text) {
             if (text == null) return '';
-            return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+            return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        // ── RTT Color ──
+        function rttColor(rtt) {
+            if (rtt === null || rtt === undefined) return 'rtt-none';
+            if (rtt < 50) return 'rtt-low';
+            if (rtt < 150) return 'rtt-mid';
+            return 'rtt-high';
         }
 
         // ── Load Hosts ──
@@ -603,19 +217,21 @@
                 const onlineCount = hosts.filter(h => h._online === true).length;
                 const totalKnown = hosts.filter(h => h._online !== null).length;
                 const indicator = document.getElementById('status-indicator');
+                const dot = document.getElementById('indicator-dot');
+                const text = document.getElementById('indicator-text');
                 if (totalKnown > 0) {
-                    indicator.innerHTML = `<span class="w-2 h-2 rounded-full ${onlineCount > 0 ? 'status-online' : ''}" style="background: ${onlineCount > 0 ? 'var(--online)' : 'var(--offline)'}"></span> ${onlineCount}/${totalKnown} online`;
+                    dot.className = 'status-dot' + (onlineCount > 0 ? ' status-dot-online' : ' status-dot-offline');
+                    if (onlineCount > 0) dot.classList.add('status-online');
+                    text.textContent = `${onlineCount}/${totalKnown} online`;
                 }
                 renderHosts();
                 pingHosts();
             } catch (err) {
                 console.error(err);
-                grid.innerHTML = `
-                    <div class="col-span-1 md:col-span-2 lg:col-span-3 text-center p-8 border rounded-3xl"
-                        style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
-                        <p class="font-bold text-lg" style="color: #fca5a5">Connection Failed</p>
-                        <p class="text-sm mt-1" style="color: rgba(252, 165, 165, 0.6)">Could not reach OPNsense API.</p>
-                    </div>`;
+                grid.innerHTML = `<div class="error-state">
+                    <p>Connection Failed</p>
+                    <p>Could not reach OPNsense API.</p>
+                </div>`;
             } finally {
                 grid.style.opacity = '1';
             }
@@ -623,7 +239,7 @@
 
         function renderHosts() {
             if (!Array.isArray(hosts) || hosts.length === 0) {
-                grid.innerHTML = `<div class="col-span-1 md:col-span-2 lg:col-span-3 text-center py-20" style="color: var(--text-muted)">No WOL hosts configured in OPNsense.</div>`;
+                grid.innerHTML = `<div class="empty-state">No WOL hosts configured in OPNsense.</div>`;
                 return;
             }
 
@@ -651,57 +267,50 @@
                 // Status dot
                 let statusDot = '';
                 if (host._online === true) {
-                    statusDot = `<span class="w-2.5 h-2.5 rounded-full status-online flex-shrink-0" style="background: var(--online)" title="Online"></span>`;
+                    statusDot = `<span class="status-dot-card status-online" style="background: var(--online)" title="Online"></span>`;
                 } else if (host._online === false) {
-                    statusDot = `<span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background: var(--offline)" title="Offline"></span>`;
+                    statusDot = `<span class="status-dot-card" style="background: var(--offline)" title="Offline"></span>`;
                 }
 
                 return `
-                <div class="fade-in rounded-2xl p-5 border shadow-xl flex flex-col gap-4 transition-colors"
-                    style="background: var(--bg-card); border-color: var(--border);"
-                    onmouseenter="this.style.borderColor='var(--border-hover)'"
-                    onmouseleave="this.style.borderColor='var(--border)'">
+                <div class="host-card fade-in">
 
                     <!-- Header -->
-                    <div class="flex items-center gap-3">
-                        <div class="flex flex-col overflow-hidden min-w-0">
-                            <div class="flex items-center gap-2">
+                    <div class="host-card-header">
+                        <div class="host-card-name-wrap">
+                            <div class="host-card-name-line">
                                 ${statusDot}
-                                <h3 class="font-bold text-lg truncate leading-tight" style="color: var(--text-heading)" title="${descr}">${descr}</h3>
+                                <h3 class="host-card-name" title="${descr}">${descr}</h3>
                             </div>
-                            <div class="flex items-center gap-1.5 text-xs font-medium mt-0.5" style="color: var(--text-muted)">
-                                <span class="uppercase tracking-wider font-bold opacity-60">${iface}</span>
+                            <div class="host-card-meta">
+                                <span class="iface-tag">${iface}</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Details -->
-                    <div class="rounded-lg p-3 border flex flex-col gap-1.5" style="background: var(--bg-card-inner); border-color: var(--border)">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="font-medium" style="color: var(--text-muted)">MAC</span>
-                            <span class="font-mono tracking-wide select-all" style="color: var(--text)">${mac}</span>
+                    <div class="host-details">
+                        <div class="detail-row">
+                            <span class="detail-label">MAC</span>
+                            <span class="detail-value detail-value-mono">${mac}</span>
                         </div>
-                        ${ip ? `<div class="flex justify-between items-center text-xs">
-                            <span class="font-medium" style="color: var(--text-muted)">IP</span>
-                            <span style="color: var(--text)">${ip}</span>
+                        ${ip ? `<div class="detail-row">
+                            <span class="detail-label">IP</span>
+                            <span class="detail-value">${ip}</span>
                         </div>` : ''}
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="font-medium" style="color: var(--text-muted)">Latency</span>
-                            <span class="rtt-badge text-xs font-bold ${host._online ? '' : 'opacity-40'}" data-uuid="${uuid}" style="color: var(--text-muted)">${host._online ? (rttData[uuid] ? `${rttData[uuid]}ms` : '—') : 'offline'}</span>
+                        <div class="detail-row">
+                            <span class="detail-label">Latency</span>
+                            <span class="rtt-badge ${host._online ? '' : 'rtt-none'}" data-uuid="${uuid}">${host._online ? (rttData[uuid] ? `${rttData[uuid]}ms` : '—') : 'offline'}</span>
                         </div>
                         ${lastWake ? `
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="font-medium" style="color: var(--text-muted)">Last Wake</span>
-                            <span style="color: var(--text)">${lastWake}</span>
+                        <div class="detail-row">
+                            <span class="detail-label">Last Wake</span>
+                            <span class="detail-value">${lastWake}</span>
                         </div>` : ''}
                     </div>
 
                     <!-- Wake Button -->
-                    <button data-uuid="${uuid}" data-descr="${descr}"
-                        class="mt-auto w-full font-bold py-3 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 group transform active:scale-[0.98]"
-                        style="background: var(--accent); color: #fff;"
-                        onmouseenter="this.style.background='var(--accent-hover)'"
-                        onmouseleave="this.style.background='var(--accent)'">
+                    <button data-uuid="${uuid}" data-descr="${descr}" class="btn-wake-card">
                         <span>Wake Host</span>
                     </button>
                 </div>
@@ -738,22 +347,15 @@
                 const cardBadge = document.querySelector(`.rtt-badge[data-uuid="${uuid}"]`);
                 if (cardBadge) {
                     cardBadge.textContent = label;
-                    cardBadge.className = `rtt-badge text-xs font-bold ${rttColor(rtt)}`;
+                    cardBadge.className = `rtt-badge ${rttColor(rtt)}`;
                 }
                 // Table view: find the .ping-cell element
                 const td = document.querySelector(`.ping-cell[data-uuid="${uuid}"]`);
                 if (td) {
                     td.textContent = label;
-                    td.className = `ping-cell text-xs font-bold ${rttColor(rtt)}`;
+                    td.className = `ping-cell ${rttColor(rtt)}`;
                 }
             }
-        }
-
-        function rttColor(rtt) {
-            if (rtt === null || rtt === undefined) return 'opacity-50';
-            if (rtt < 50) return 'text-green-400';
-            if (rtt < 150) return 'text-yellow-400';
-            return 'text-red-400';
         }
 
         // ── Render Table ──
@@ -773,18 +375,18 @@
 
                 let statusDot = '';
                 if (host._online === true) {
-                    statusDot = `<span class="w-2.5 h-2.5 rounded-full status-online flex-shrink-0" style="background: var(--online)"></span>`;
+                    statusDot = `<span class="status-dot-card status-online" style="background: var(--online)"></span>`;
                 } else if (host._online === false) {
-                    statusDot = `<span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background: var(--offline)"></span>`;
+                    statusDot = `<span class="status-dot-card" style="background: var(--offline)"></span>`;
                 }
 
                 return `<tr>
-                    <td><div class="flex items-center gap-2">${statusDot}<span class="td-name">${descr}</span></div></td>
+                    <td><div style="display:flex;align-items:center;gap:0.5rem">${statusDot}<span class="td-name">${descr}</span></div></td>
                     <td><span class="td-iface">${iface}</span></td>
                     <td><span class="td-mac">${mac}</span></td>
-                    ${ip ? `<td style="color: var(--text-muted); font-size: 0.75rem;">${ip}</td>` : '<td></td>'}
-                    <td><span class="ping-cell text-xs font-bold ${host._online ? 'rtt-cached' : ''}" data-uuid="${uuid}" style="color: var(--text-muted)">${host._online ? (rttData[uuid] ? `${rttData[uuid]}ms` : '—') : 'offline'}</span></td>
-                    <td style="color: var(--text-muted); font-size: 0.75rem;">${lastWake || '—'}</td>
+                    ${ip ? `<td class="td-ip">${ip}</td>` : '<td></td>'}
+                    <td><span class="ping-cell ${host._online ? '' : 'rtt-none'}" data-uuid="${uuid}">${host._online ? (rttData[uuid] ? `${rttData[uuid]}ms` : '—') : 'offline'}</span></td>
+                    <td class="td-lastwake">${lastWake || '—'}</td>
                     <td class="td-wake">
                         <button data-uuid="${uuid}" data-descr="${descr}" class="btn-wake-table">Wake</button>
                     </td>
@@ -792,8 +394,8 @@
             }).join('');
 
             grid.innerHTML = `
-                <div class="col-span-1 sm:col-span-2 lg:col-span-3" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 0.75rem; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table style="min-width: 640px;">
+                <div class="table-wrap">
+                    <table>
                         <thead>
                             <tr>
                                 <th>Host</th>
@@ -876,13 +478,16 @@
             };
             const c = colors[type] || colors.info;
 
-            statusMsg.className = 'fixed bottom-8 left-1/2 z-50 min-w-[320px] max-w-[90%] p-4 rounded-xl shadow-2xl text-center text-sm font-bold border backdrop-blur-xl transition-all duration-300 toast-visible';
+            statusMsg.className = 'toast toast-visible';
             Object.assign(statusMsg.style, {
                 background: c.bg, color: c.text, borderColor: c.border
             });
 
             toastTimer = setTimeout(() => {
-                statusMsg.className = 'fixed bottom-8 left-1/2 z-50 min-w-[320px] max-w-[90%] p-4 rounded-xl shadow-2xl text-center text-sm font-bold border backdrop-blur-xl transition-all duration-300 toast-enter pointer-events-none';
+                statusMsg.className = 'toast toast-hidden';
+                statusMsg.style.background = '';
+                statusMsg.style.color = '';
+                statusMsg.style.borderColor = '';
             }, 3500);
         }
 
@@ -984,13 +589,13 @@
         function setSchedDays(mode) {
             const checks = document.querySelectorAll('#sched-days input[type="checkbox"]');
             const quickBtns = [document.getElementById('sched-quick-daily'), document.getElementById('sched-quick-weekdays')];
-            quickBtns.forEach(b => { b.style.background = 'transparent'; b.style.color = 'var(--text-muted)'; b.style.borderColor = 'var(--border)'; });
+            quickBtns.forEach(b => { b.className = 'sched-quick-btn'; });
             if (mode === 'daily') {
                 checks.forEach(c => c.checked = true);
-                document.getElementById('sched-quick-daily').style.cssText = 'background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border);';
+                document.getElementById('sched-quick-daily').classList.add('active');
             } else {
                 checks.forEach(c => c.checked = [1,2,3,4,5].includes(parseInt(c.value)));
-                document.getElementById('sched-quick-weekdays').style.cssText = 'background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border);';
+                document.getElementById('sched-quick-weekdays').classList.add('active');
             }
         }
 

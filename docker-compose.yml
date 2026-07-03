@@ -19,6 +19,9 @@ services:
       # PORT: "3000"
       # DATA_DIR: "/data"
       # VERIFY_SSL: "false"
+    # ── Optional: mount a custom CSS theme ──
+    # Uncomment and point to your .css file to override styles:
+    # - /path/to/your-theme.css:/app/custom.css
     volumes:
       - wol_data:/data
 

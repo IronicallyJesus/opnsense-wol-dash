@@ -14,6 +14,20 @@ const DEMO_MODE = process.env.DEMO_MODE === 'true';
 app.use(express.json());
 app.use(express.static('public'));
 
+// ── Custom CSS Mount ──
+// Mount a theme file at /app/custom.css (Docker volume -v /path/to/custom.css:/app/custom.css)
+// If no file is mounted, returns empty 200 with the right Content-Type (no 404 console noise)
+const fs = require('fs');
+const CUSTOM_CSS_PATH = '/app/custom.css';
+app.get('/custom.css', (req, res) => {
+  res.setHeader('Content-Type', 'text/css; charset=utf-8');
+  if (fs.existsSync(CUSTOM_CSS_PATH)) {
+    res.sendFile(CUSTOM_CSS_PATH);
+  } else {
+    res.send('');
+  }
+});
+
 // ── Demo Mode: Mock Data ──
 const DEMO_HOSTS = [
   {

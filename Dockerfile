@@ -14,6 +14,8 @@ COPY lib/ ./lib/
 COPY public/ ./public/
 RUN mkdir -p /app/data && chown -R node:node /app/data
 
+# Custom user theme: mount at /app/custom.css
+#   docker run -v /path/to/your-theme.css:/app/custom.css ...
 EXPOSE 3000
 USER node
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
