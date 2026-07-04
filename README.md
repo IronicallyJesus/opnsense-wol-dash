@@ -93,7 +93,7 @@ docker run -d -p 3000:3000 -e DEMO_MODE=true opnsense-wol
 # → http://localhost:3000
 ```
 
-Or use [Docker Compose](#docker-compose) with `DEMO_MODE: "true"`. RTT is simulated with random values (5–20ms) for online hosts in demo mode.
+Or use [Docker Compose](#docker-compose) with `DEMO_MODE: "true"`. RTT is simulated with random values (5-20ms) for online hosts in demo mode.
 
 ### Docker
 
