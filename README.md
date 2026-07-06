@@ -1,6 +1,7 @@
 # OPNsense WOL
 
-![Dashboard Grid View](./public/screenshot-grid.png) *Grid view* | ![Dashboard Table View](./public/screenshot-table.png) *Table view*
+![Dashboard Grid View](./public/screenshot-grid.png) *Grid view*
+![Dashboard Table View](./public/screenshot-table.png) *Table view*
 
 A lightweight web dashboard for waking devices on your network through the OPNsense WOL plugin API. Features live ping latency (RTT), a compact table/grid view toggle, and ARP-based host status. Built with Express.js.
 
@@ -31,11 +32,11 @@ A lightweight web dashboard for waking devices on your network through the OPNse
 ## How It Works
 
 ```
-┌──────────┐     ┌───────────────────┐     ┌──────────────────────────────┐
-│  Browser │────►│  Express Server   │────►│  OPNsense API                │
-│ (UI)     │     │  (Node.js)        │     │                              │
-└──────────┘     └───────────────────┘     │  GET /api/diagnostics/       │
-                       │                    │    interface/get_arp          │
+┌──────────┐     ┌───────────────────┐      ┌──────────────────────────────┐
+│  Browser │────►│  Express Server   │─────►│  OPNsense API                │
+│ (UI)     │     │  (Node.js)        │      │                              │
+└──────────┘     └───────────────────┘      │  GET /api/diagnostics/       │
+                       │                    │    interface/get_arp         │
                    GET /api/hosts           │    ─► status + IP            │
                    POST /api/wake/:uuid     │                              │
                    POST /api/wake-all       │  POST /api/wol/wol/          │
