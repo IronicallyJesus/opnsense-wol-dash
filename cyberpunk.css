@@ -1,0 +1,627 @@
+/* ═══════════ CYBERPUNK NEON THEME ═══════════
+ * Mount: docker run -v $(pwd)/cyberpunk.css:/app/custom.css -e DEMO_MODE=true -p 3000:3000 git.twk95.com/twk95/opnsense-wol:latest
+ *
+ * Completely overrides the default slate dark aesthetic:
+ *   Slate  → deep navy, cool blue accents, subdued
+ *   Cyber  → obsidian black, neon cyan/magenta, glowing, high contrast
+ * ═══════════════════════════════════════════ */
+
+/* ── Base: Obsidian canvas ── */
+.app-wrapper {
+  background: #0a0a0f !important;
+  min-height: 100vh;
+}
+
+body {
+  font-family: 'Courier New', 'Consolas', monospace !important;
+}
+
+.app-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* ── Header: Neon cyan strip ── */
+.header {
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%) !important;
+  border: 1px solid #00f0ff !important;
+  border-radius: 0 !important;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.15), inset 0 0 15px rgba(0, 240, 255, 0.03) !important;
+  padding: 1.25rem 1.5rem !important;
+}
+
+.header-title h1 {
+  color: #00f0ff !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: 3px !important;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.6) !important;
+  font-size: 1.5rem !important;
+}
+
+.header-title p {
+  color: #ff00aa !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: 4px !important;
+  font-size: 0.7rem !important;
+}
+
+/* ── Buttons: Glowing neon ── */
+.btn-wake-all,
+button {
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  font-size: 0.75rem !important;
+}
+
+.btn-wake-all {
+  background: transparent !important;
+  border: 1px solid #ff00aa !important;
+  color: #ff00aa !important;
+  box-shadow: 0 0 10px rgba(255, 0, 170, 0.3) !important;
+  border-radius: 0 !important;
+  padding: 0.5rem 1.25rem !important;
+  transition: all 0.2s !important;
+}
+
+.btn-wake-all:hover {
+  background: rgba(255, 0, 170, 0.15) !important;
+  box-shadow: 0 0 20px rgba(255, 0, 170, 0.5) !important;
+}
+
+.btn-icon {
+  background: transparent !important;
+  border: 1px solid #00f0ff !important;
+  color: #00f0ff !important;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.2) !important;
+  border-radius: 0 !important;
+}
+
+.btn-icon:hover {
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.4) !important;
+  background: rgba(0, 240, 255, 0.08) !important;
+}
+
+/* ── View toggle: Fix circular cutoff ── */
+.view-toggle {
+  border-radius: 0 !important;
+  overflow: visible !important;
+  border: 1px solid #00f0ff !important;
+  background: #0a0a0f !important;
+}
+
+.view-toggle button {
+  background: transparent !important;
+  border: none !important;
+  color: #00f0ff !important;
+  border-radius: 0 !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  padding: 0.5rem 1rem !important;
+}
+
+.view-toggle button:not(:last-child) {
+  border-right: 1px solid #00f0ff !important;
+}
+
+.view-toggle button.active {
+  background: rgba(0, 240, 255, 0.2) !important;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4) !important;
+}
+
+/* ── Theme select ── */
+.theme-select {
+  background: #0a0a0f !important;
+  border: 1px solid #00f0ff !important;
+  color: #00f0ff !important;
+  font-family: 'Courier New', monospace !important;
+  border-radius: 0 !important;
+}
+
+.theme-select-arrow {
+  stroke: #00f0ff !important;
+}
+
+/* ── Status bar ── */
+.status-bar {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.2) !important;
+  padding: 0.5rem 0 !important;
+}
+
+.status-bar-text {
+  color: #ff00aa !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.7rem !important;
+  letter-spacing: 1px !important;
+}
+
+.status-indicator {
+  color: #00f0ff !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.7rem !important;
+}
+
+/* ── Online/Offline dots ── */
+.status-dot-online {
+  background: #00ff41 !important;
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.8) !important;
+}
+
+.status-dot-offline {
+  background: #ff00aa !important;
+  box-shadow: 0 0 6px rgba(255, 0, 170, 0.5) !important;
+}
+
+/* ── Host cards: Terminal panels ── */
+.host-grid {
+  gap: 1rem !important;
+  margin-top: 1rem !important;
+}
+
+.host-card {
+  background: #0d1117 !important;
+  border: 1px solid #00f0ff !important;
+  border-radius: 0 !important;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.08), inset 0 0 20px rgba(0, 240, 255, 0.02) !important;
+  padding: 1.25rem !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Scanline overlay on cards */
+.host-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 240, 255, 0.015) 2px,
+    rgba(0, 240, 255, 0.015) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.host-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+.host-card:hover {
+  border-color: #ff00aa !important;
+  box-shadow: 0 0 20px rgba(255, 0, 170, 0.2), 0 0 40px rgba(255, 0, 170, 0.08) !important;
+}
+
+.host-card h3 {
+  color: #00f0ff !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 1rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4) !important;
+}
+
+.host-card .mac,
+.host-card .interface,
+.host-card .host-ip {
+  color: #8888aa !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.7rem !important;
+}
+
+.host-card .host-ip {
+  color: #ff00aa !important;
+}
+
+.host-card .latency {
+  color: #00ff41 !important;
+  font-family: 'Courier New', monospace !important;
+  text-shadow: 0 0 6px rgba(0, 255, 65, 0.4) !important;
+}
+
+/* ── Wake buttons (card view) ── */
+.btn-wake-card {
+  background: transparent !important;
+  border: 1px solid #ff00aa !important;
+  color: #ff00aa !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  border-radius: 0 !important;
+  letter-spacing: 1px !important;
+  padding: 0.5rem 1rem !important;
+  transition: all 0.2s !important;
+  cursor: pointer !important;
+}
+
+.btn-wake-card:hover {
+  background: #ff00aa !important;
+  color: #0a0a0f !important;
+  box-shadow: 0 0 15px rgba(255, 0, 170, 0.5) !important;
+}
+
+/* ── Wake buttons (table view) ── */
+.btn-wake-table {
+  background: transparent !important;
+  border: 1px solid #ff00aa !important;
+  color: #ff00aa !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  border-radius: 0 !important;
+  font-size: 0.7rem !important;
+  padding: 0.25rem 0.75rem !important;
+  transition: all 0.2s !important;
+  cursor: pointer !important;
+}
+
+.btn-wake-table:hover {
+  background: #ff00aa !important;
+  color: #0a0a0f !important;
+  box-shadow: 0 0 10px rgba(255, 0, 170, 0.5) !important;
+}
+
+/* ── Schedule Modal ── */
+.modal-overlay {
+  background: rgba(10, 10, 15, 0.92) !important;
+}
+
+.modal-panel {
+  background: #0d1117 !important;
+  border: 1px solid #00f0ff !important;
+  border-radius: 0 !important;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.15), 0 0 60px rgba(0, 240, 255, 0.05) !important;
+  max-width: 520px !important;
+}
+
+.modal-header {
+  border-bottom: 1px solid rgba(0, 240, 255, 0.2) !important;
+  padding: 1.25rem 1.5rem !important;
+}
+
+.modal-header h2 {
+  color: #ff00aa !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  font-size: 1rem !important;
+}
+
+.modal-close {
+  color: #00f0ff !important;
+  font-size: 1.5rem !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.modal-close:hover {
+  color: #ff00aa !important;
+}
+
+.modal-body {
+  padding: 1rem 1.5rem !important;
+}
+
+.empty-schedules {
+  color: #8888aa !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.8rem !important;
+}
+
+/* Schedule items */
+.schedule-item {
+  border: 1px solid rgba(0, 240, 255, 0.15) !important;
+  background: #0a0a0f !important;
+  border-radius: 0 !important;
+  padding: 0.75rem 1rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.sched-host {
+  color: #00f0ff !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  font-size: 0.8rem !important;
+  letter-spacing: 1px !important;
+}
+
+.sched-detail {
+  color: #8888aa !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.7rem !important;
+}
+
+.sched-last {
+  color: #ff00aa !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.65rem !important;
+}
+
+.sched-toggle {
+  border: 1px solid #00f0ff !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+.sched-toggle.on {
+  background: rgba(0, 255, 65, 0.2) !important;
+  border-color: #00ff41 !important;
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.3) !important;
+}
+
+.sched-toggle.off {
+  background: rgba(255, 0, 170, 0.15) !important;
+  border-color: #ff00aa !important;
+}
+
+.sched-del {
+  color: #ff00aa !important;
+  font-size: 1.25rem !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.sched-del:hover {
+  color: #ff00aa !important;
+  text-shadow: 0 0 8px rgba(255, 0, 170, 0.6) !important;
+}
+
+/* Modal form */
+.modal-form {
+  border-top: 1px solid rgba(0, 240, 255, 0.15) !important;
+  padding: 1rem 1.5rem !important;
+}
+
+.form-input,
+.form-select {
+  background: #0a0a0f !important;
+  border: 1px solid #00f0ff !important;
+  color: #00f0ff !important;
+  font-family: 'Courier New', monospace !important;
+  border-radius: 0 !important;
+  padding: 0.4rem 0.75rem !important;
+  font-size: 0.8rem !important;
+}
+
+.btn-add-sched {
+  background: transparent !important;
+  border: 1px solid #ff00aa !important;
+  color: #ff00aa !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  border-radius: 0 !important;
+  letter-spacing: 1px !important;
+  padding: 0.4rem 1rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+}
+
+.btn-add-sched:hover {
+  background: #ff00aa !important;
+  color: #0a0a0f !important;
+  box-shadow: 0 0 10px rgba(255, 0, 170, 0.5) !important;
+}
+
+.sched-quick-btn {
+  background: transparent !important;
+  border: 1px solid #00f0ff !important;
+  color: #00f0ff !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  border-radius: 0 !important;
+  font-size: 0.7rem !important;
+  padding: 0.25rem 0.75rem !important;
+}
+
+.sched-quick-btn.active {
+  background: rgba(0, 240, 255, 0.2) !important;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.3) !important;
+}
+
+.sched-days-label {
+  color: #00f0ff !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+}
+
+.day-checkboxes label {
+  color: #8888aa !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.75rem !important;
+}
+
+.day-checkboxes input[type="checkbox"] {
+  accent-color: #00f0ff !important;
+}
+
+/* ── Toast ── */
+.toast {
+  background: #0d1117 !important;
+  border: 1px solid #ff00aa !important;
+  color: #ff00aa !important;
+  font-family: 'Courier New', monospace !important;
+  border-radius: 0 !important;
+  box-shadow: 0 0 20px rgba(255, 0, 170, 0.3) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+/* ── Table view ── */
+.table-wrap {
+  background: #0d1117 !important;
+  border: 1px solid #00f0ff !important;
+  border-radius: 0 !important;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.1) !important;
+}
+
+.table-wrap table {
+  background: #0a0a0f !important;
+  border-collapse: collapse !important;
+  width: 100% !important;
+}
+
+.table-wrap thead {
+  background: rgba(0, 240, 255, 0.05) !important;
+  border-bottom: 2px solid #00f0ff !important;
+}
+
+.table-wrap th {
+  color: #ff00aa !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  font-size: 0.75rem !important;
+  padding: 0.75rem 1rem !important;
+  background: transparent !important;
+  border-bottom: 1px solid #00f0ff !important;
+}
+
+.table-wrap td {
+  color: #00f0ff !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.8rem !important;
+  padding: 0.5rem 1rem !important;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.08) !important;
+  background: transparent !important;
+}
+
+.table-wrap tbody tr:hover {
+  background: rgba(0, 240, 255, 0.05) !important;
+}
+
+.table-wrap tbody tr:hover td {
+  color: #00f0ff !important;
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.3) !important;
+}
+
+.td-name {
+  color: #00f0ff !important;
+  font-family: 'Courier New', monospace !important;
+  font-weight: bold !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+.td-iface {
+  color: #8888aa !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.75rem !important;
+}
+
+.td-mac,
+.td-ip {
+  color: #ff00aa !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.75rem !important;
+}
+
+.ping-cell {
+  color: #00ff41 !important;
+  font-family: 'Courier New', monospace !important;
+  font-weight: bold !important;
+}
+
+.ping-cell.rtt-none {
+  color: #ff00aa !important;
+}
+
+.td-lastwake {
+  color: #8888aa !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.7rem !important;
+}
+
+/* ── Grid view: Info card detail rows ── */
+.host-details {
+  background: #0a0a0f !important;
+  border: 1px solid rgba(0, 240, 255, 0.2) !important;
+  border-left: 3px solid #00f0ff !important;
+  padding: 0.75rem 1rem !important;
+  margin: 0 0.75rem !important;
+}
+
+.detail-row {
+  padding: 0.35rem 0 !important;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.06) !important;
+}
+
+.detail-row:last-child {
+  border-bottom: none !important;
+}
+
+.detail-label {
+  color: #ff00aa !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  font-size: 0.65rem !important;
+  letter-spacing: 1.5px !important;
+  opacity: 0.85 !important;
+}
+
+.detail-value {
+  color: #00f0ff !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.5px !important;
+}
+
+.detail-value-mono {
+  color: #ff00aa !important;
+  font-family: 'Courier New', monospace !important;
+  letter-spacing: 1px !important;
+}
+
+.rtt-badge {
+  background: rgba(0, 255, 65, 0.1) !important;
+  border: 1px solid rgba(0, 255, 65, 0.3) !important;
+  color: #00ff41 !important;
+  font-family: 'Courier New', monospace !important;
+  font-weight: bold !important;
+  padding: 0.15rem 0.5rem !important;
+  border-radius: 0 !important;
+}
+
+.rtt-badge.rtt-none {
+  background: rgba(255, 0, 170, 0.1) !important;
+  border-color: rgba(255, 0, 170, 0.3) !important;
+  color: #ff00aa !important;
+}
+
+.iface-tag {
+  background: rgba(0, 240, 255, 0.1) !important;
+  border: 1px solid rgba(0, 240, 255, 0.3) !important;
+  color: #00f0ff !important;
+  font-family: 'Courier New', monospace !important;
+  text-transform: uppercase !important;
+  font-size: 0.65rem !important;
+  padding: 0.15rem 0.5rem !important;
+  border-radius: 0 !important;
+  letter-spacing: 1px !important;
+}
+
+.status-dot-card {
+  box-shadow: 0 0 8px currentColor !important;
+}
+
+/* ── Animations ── */
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 0.98; }
+  94% { opacity: 0.97; }
+}
+
+.header {
+  animation: flicker 8s infinite;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0a0f; }
+::-webkit-scrollbar-thumb { background: #00f0ff; border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: #ff00aa; }

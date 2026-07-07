@@ -170,6 +170,26 @@ Click the theme dropdown in the header to switch between 5 color presets:
 
 Your choice persists in localStorage across sessions.
 
+## Custom CSS
+
+Override every visual element with your own stylesheet. The app serves a `/custom.css` endpoint from the path set in `CUSTOM_CSS_PATH` (default: `/app/custom.css`). Mount your file at that path:
+
+```sh
+docker run -d -p 3000:3000 \
+  -e DEMO_MODE=true \
+  -v /path/to/custom.css:/app/custom.css \
+  git.twk95.com/twk95/opnsense-wol:latest
+```
+
+Or in Docker Compose:
+
+```yaml
+volumes:
+  - ./custom.css:/app/custom.css:ro
+```
+
+Use `!important` to override built-in theme styles. See [`cyberpunk.css`](./cyberpunk.css) for a complete example — neon cyan/magenta, monospace, scanline card overlays, CRT flicker animations, and fully themed modal forms, tables, toggles, and buttons.
+
 ## View Toggle
 
 Click **Grid** or **Table** in the header to switch between views:
