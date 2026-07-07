@@ -1,118 +1,79 @@
 # OPNsense WOL
 
-![Dashboard Grid View](./public/screenshot-grid.png) *Grid view*
-![Dashboard Table View](./public/screenshot-table.png) *Table view*
+A lightweight web dashboard for waking devices on your network through the OPNsense WOL plugin API — with live ping latency (RTT), table/grid views, scheduled wakes, and ARP-based host status. Built with Express.js.
 
-A lightweight web dashboard for waking devices on your network through the OPNsense WOL plugin API. Features live ping latency (RTT), a compact table/grid view toggle, and ARP-based host status. Built with Express.js.
+![Dashboard Grid View](./public/screenshot-grid.png) *Grid view* | ![Dashboard Table View](./public/screenshot-table.png) *Table view*
 
-> 🌐 **Live Demo:** [https://wol-demo.twk95.com/](https://wol-demo.twk95.com/) — Fully functional dashboard with mock hosts, no OPNsense required.
+> 🌐 **Live Demo:** [wol-demo.twk95.com](https://wol-demo.twk95.com/) — Fully functional dashboard with mock hosts, no OPNsense required.
 
 ## Security
 
-> ⚠️ **This app has no built-in authentication.** Every API endpoint — including `/api/wake/*` (which sends magic packets) — is open to anyone who can reach the server. For production use, deploy **exclusively behind a reverse proxy** (OPNsense HAProxy, Nginx, Caddy, etc.) with authentication. The app is designed to run on a trusted LAN or VPN.
+> ⚠️ **This app has no built-in authentication.** Every endpoint — including `/api/wake/*` — is open to anyone who can reach the server. Deploy **exclusively behind a reverse proxy** (OPNsense HAProxy, Nginx, Caddy) with authentication. Designed for trusted LAN or VPN.
 
 ## Features
 
-| Feature | Description |
-|---|---|
-| | **Host Discovery** | Fetches all WOL-configured hosts directly from OPNsense |
-| | **One-Click Wake** | Sends magic packet via OPNsense API with toast confirmation |
-| | **Wake All** | One-click button wakes every host at once |
-| | **Host Status** | Real-time online indicators via OPNsense ARP table — MAC-level presence, no ping needed |
-| | **Ping Latency (RTT)** | Live round-trip time display with color-coded badges (60s cache) |
-| | **Table/Grid View** | Toggle between compact card grid and sortable data table — preference persisted in localStorage |
-| | **Theme Selector** | 5 preset color themes with localStorage persistence |
-| | **Wake History** | Tracks when each host was last woken |
-| | **Responsive Design** | Card layout adapts from 1 to 3 columns; table view is scrollable on mobile |
-| | **Auto-Refresh** | Polls OPNsense and refreshes status every 30 seconds; RTT re-fetches every 30s |
-| | **Scheduled Wake** | Schedule automatic wake-ups by time and day-of-week |
-| | **Sanitized Display** | Host descriptions and MAC addresses are HTML-escaped |
-| | **Dockerized** | Production Docker build with Alpine Node.js |
+| | | |
+|---|---|---|
+| **Host Discovery** | Fetches WOL-configured hosts from OPNsense |
+| **One-Click Wake** | Sends magic packet via OPNsense API with toast confirmation |
+| **Wake All** | Single button wakes every host at once |
+| **Host Status** | Real-time online/offline via OPNsense ARP table — MAC-level, no ping needed |
+| **Ping Latency (RTT)** | Live round-trip times with color-coded badges, 60s cache |
+| **Table / Grid View** | Toggle between sortable data table and compact card grid |
+| **5 Color Themes** | Built-in presets: Slate, Emerald, Violet, Rose, Light |
+| **Custom CSS** | Drop in a stylesheet for full visual control |
+| **Scheduled Wake** | Automatic wake-ups by time and day-of-week |
+| **Wake History** | Tracks last wake time per host |
+| **Responsive** | Cards adapt 1–3 columns; table scrolls on mobile |
+| **Auto-Refresh** | Polls OPNsense every 30s |
+| **Dockerized** | Production Alpine Node.js image |
 
 ## How It Works
 
 ```
 ┌──────────┐     ┌───────────────────┐      ┌──────────────────────────────┐
 │  Browser │────►│  Express Server   │─────►│  OPNsense API                │
-│ (UI)     │     │  (Node.js)        │      │                              │
-└──────────┘     └───────────────────┘      │  GET /api/diagnostics/       │
-                       │                    │    interface/get_arp         │
-                   GET /api/hosts           │    ─► status + IP            │
-                   POST /api/wake/:uuid     │                              │
-                   POST /api/wake-all       │  POST /api/wol/wol/          │
-                   GET  /api/ping/:uuid     │    searchHost / set          │
-                   GET  /api/ping           └──────────────────────────────┘
-                   GET  /api/schedules
-                   POST /api/schedules
+└──────────┘     └───────────────────┘      │ GET  /api/diagnostics/       │
+                      │                     │       interface/get_arp      │
+                  GET  /api/hosts           │ POST /api/wol/wol/           │
+                  POST /api/wake/:uuid      │       searchHost / set       │
+                  POST /api/wake-all        └──────────────────────────────┘
+                  GET  /api/ping
+                  GET  /api/schedules
 ```
 
-The Express server acts as a bridge between the browser and OPNsense:
-
-1. **List hosts** — queries OPNsense `wol/searchHost`, fetches ARP table in parallel, merges status + IP per MAC
-2. **Wake host** — sends magic packet via OPNsense `wol/set`
-3. **Status** — embedded in `/api/hosts` response via the ARP lookup — no separate status endpoint
-4. **Ping latency** — system `ping` to each host's IP, cached in memory for 60 seconds
-5. **Scheduled wake** — in-process scheduler checks enabled schedules every 60 seconds and fires wake requests
+The Express server bridges the browser and OPNsense — it fetches hosts, merges ARP status + IP, fires magic packets, runs system pings (60s cache), and handles the in-process wake scheduler. All view preferences are persisted in `localStorage`.
 
 ## Getting Started
 
 ### Prerequisites
+
 - [Docker](https://docs.docker.com/engine/install/) & [Docker Compose](https://docs.docker.com/compose/install/)
-- OPNsense with the **os-wol** plugin installed and API access enabled
-- OPNsense API key with the **WOL** privilege (`wol/searchHost` and `wol/set`)
-
-### OPNsense API Permissions
-
-When creating the API key in OPNsense (System → Access → Users → edit user → API keys), assign these privileges:
-
-| Privilege | Endpoint | Purpose |
-|---|---|---|
-| **WOL** | `/api/wol/wol/*` | List, wake hosts, and check status via ARP table |
-
-That's it — just one privilege needed.
+- OPNsense with the **os-wol** plugin and API access enabled
+- OPNsense API key with the **WOL** privilege (`/api/wol/wol/*`) — just one privilege needed for host listing, wake, and ARP lookups
 
 ### Configuration
 
-The server is configured entirely through environment variables:
+All settings via environment variables:
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `OPNSENSE_URL` | ✅ | — | OPNsense base URL (e.g. `https://opnsense.lan`) |
 | `OPNSENSE_API_KEY` | ✅ | — | OPNsense API key |
 | `OPNSENSE_API_SECRET` | ✅ | — | OPNsense API secret |
+| `DEMO_MODE` | ❌ | `false` | Run with 6 mock hosts — no OPNsense required |
 | `PORT` | ❌ | `3000` | Server listen port |
 | `VERIFY_SSL` | ❌ | `false` | Set to `"true"` to verify SSL cert |
-| `DEMO_MODE` | ❌ | `false` | Set to `"true"` to run with mock data — no OPNsense needed |
-| `DATA_DIR` | ❌ | `./data` | Directory for persistent data (schedules, wake history) |
-
-### Demo Mode
-
-Run a fully functional dashboard with 6 mock hosts (3 online, 3 offline) — no OPNsense connection required:
-
-```sh
-docker run -d -p 3000:3000 -e DEMO_MODE=true opnsense-wol
-# → http://localhost:3000
-```
-
-Or use [Docker Compose](#docker-compose) with `DEMO_MODE: "true"`. RTT is simulated with random values (5-20ms) for online hosts in demo mode.
-
-### Docker
-
-```sh
-# Build and run
-docker build -t opnsense-wol .
-docker run -d -p 3000:3000 -e DEMO_MODE=true opnsense-wol
-```
+| `DATA_DIR` | ❌ | `./data` | Persistent data (schedules, wake history) |
 
 ### Docker Compose
 
-The fastest way to run — drop this in as `docker-compose.yml`:
+Drop this in as `docker-compose.yml`:
 
 ```yaml
 services:
   opnsense-wol:
-    image: opnsense-wol
-    build: .
+    image: git.twk95.com/twk95/opnsense-wol:latest
     container_name: opnsense-wol
     restart: unless-stopped
     ports:
@@ -121,7 +82,7 @@ services:
       # ── Demo mode (no OPNsense required) ──
       DEMO_MODE: "true"
 
-      # ── Production: uncomment and fill in your OPNsense API credentials ──
+      # ── Production: uncomment and fill in ──
       # OPNSENSE_URL: "https://opnsense.lan"
       # OPNSENSE_API_KEY: "your-api-key"
       # OPNSENSE_API_SECRET: "your-api-secret"
@@ -137,47 +98,18 @@ volumes:
   wol_data:
 ```
 
-For **production**, uncomment the OPNsense credentials and set `DEMO_MODE: "false"`.
+For **production**, drop `DEMO_MODE`, uncomment the OPNsense credentials, and place it behind a reverse proxy.
 
-> **Note:** Status is determined via OPNsense's ARP table (API), not ICMP — no special network config or host mode needed.
-
-## API Endpoints
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/hosts` | List all WOL hosts with ARP-based online status + IP |
-| `GET` | `/api/ping/:uuid` | Ping a single host by UUID, returns RTT in ms (60s cache) |
-| `GET` | `/api/ping` | Batch ping — returns cached RTT for all hosts |
-| `POST` | `/api/wake/:uuid` | Send wake signal to a host by UUID |
-| `POST` | `/api/wake-all` | Send wake signal to all configured hosts |
-| `GET` | `/api/schedules` | List all scheduled wake tasks |
-| `POST` | `/api/schedules` | Create a scheduled wake |
-| `PUT` | `/api/schedules/:id` | Update a scheduled wake |
-| `DELETE` | `/api/schedules/:id` | Delete a scheduled wake |
-| `GET` | `/health` | Health check endpoint |
-
-## Themes
-
-Click the theme dropdown in the header to switch between 5 color presets:
-
-| Theme | Vibe |
-|---|---|
-| **Slate Dark** | Default — cool blue-grey |
-| **Emerald Dark** | Deep green |
-| **Violet Dark** | Indigo/purple |
-| **Rose Dark** | Warm red |
-| **Light** | Clean white |
-
-Your choice persists in localStorage across sessions.
+> **Note:** Status is determined via OPNsense's ARP table (API), not ICMP — no special network config needed.
 
 ## Custom CSS
 
-Override every visual element with your own stylesheet. The app serves a `/custom.css` endpoint from the path set in `CUSTOM_CSS_PATH` (default: `/app/custom.css`). Mount your file at that path:
+Mount your own stylesheet at `/app/custom.css` to override every visual element:
 
 ```sh
 docker run -d -p 3000:3000 \
   -e DEMO_MODE=true \
-  -v /path/to/custom.css:/app/custom.css \
+  -v /path/to/cyberpunk.css:/app/custom.css \
   git.twk95.com/twk95/opnsense-wol:latest
 ```
 
@@ -188,16 +120,22 @@ volumes:
   - ./custom.css:/app/custom.css:ro
 ```
 
-Use `!important` to override built-in theme styles. See [`cyberpunk.css`](./cyberpunk.css) for a complete example — neon cyan/magenta, monospace, scanline card overlays, CRT flicker animations, and fully themed modal forms, tables, toggles, and buttons.
+Use `!important` to override built-in theme styles. See [`cyberpunk.css`](./cyberpunk.css) for a complete example — neon cyan/magenta, monospace, scanline overlays, CRT flicker, fully themed modals and tables.
 
-## View Toggle
+## API Endpoints
 
-Click **Grid** or **Table** in the header to switch between views:
-
-- **Grid view** — Card-based layout with RTT badges, status dots, MAC, and Wake buttons
-- **Table view** — Compact data table with sortable headers: Host, Interface, MAC, IP, Latency, Last Wake, Action
-
-Your view preference persists in localStorage.
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/hosts` | List hosts with ARP-based online status + IP |
+| `GET` | `/api/ping/:uuid` | Ping a single host by UUID, returns RTT in ms |
+| `GET` | `/api/ping` | Batch ping — cached RTT for all hosts |
+| `POST` | `/api/wake/:uuid` | Send wake signal to a host by UUID |
+| `POST` | `/api/wake-all` | Send wake signal to all hosts |
+| `GET` | `/api/schedules` | List scheduled wake tasks |
+| `POST` | `/api/schedules` | Create a scheduled wake |
+| `PUT` | `/api/schedules/:id` | Update a scheduled wake |
+| `DELETE` | `/api/schedules/:id` | Delete a scheduled wake |
+| `GET` | `/health` | Health check |
 
 ## Project Structure
 
@@ -206,10 +144,10 @@ Your view preference persists in localStorage.
 ├── lib/
 │   └── scheduler.js       # In-process scheduled wake module
 ├── public/
-│   ├── index.html         # Frontend (Tailwind CSS via CDN, themes, wake history)
+│   ├── index.html         # Frontend (Tailwind CDN, themes, wake history)
 │   ├── screenshot-grid.png
 │   └── screenshot-table.png
-├── Dockerfile             # Production build (Alpine Node.js)
+├── Dockerfile             # Production Alpine Node.js build
 ├── docker-compose.yml     # One-command demo or production deployment
 ├── .env.example           # Environment variable template
 ├── .dockerignore
