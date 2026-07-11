@@ -7,8 +7,8 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "axios": "1.17.0",
-    "express": "4.22.2"
+    "axios": "1.18.1",
+    "express": "5.2.1"
   },
   "overrides": {
     "form-data": "^4.0.6"
