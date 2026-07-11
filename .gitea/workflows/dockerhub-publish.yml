@@ -28,9 +28,10 @@ jobs:
       - name: Extract version from tag
         id: meta
         run: |
-          VERSION="${GITEA_REF_NAME#v}"
+          VERSION="${{ gitea.ref_name }}"
+          VERSION="${VERSION#v}"
           echo "version=$VERSION" >> $GITEA_OUTPUT
-          echo "tags=$IMAGE_NAME:latest,$IMAGE_NAME:$VERSION" >> $GITEA_OUTPUT
+          echo "tags=${{ env.IMAGE_NAME }}:latest,${{ env.IMAGE_NAME }}:$VERSION" >> $GITEA_OUTPUT
 
       - name: Build and push
         uses: docker/build-push-action@v6
