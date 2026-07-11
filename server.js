@@ -225,8 +225,8 @@ app.get('/api/ping/:uuid', async (req, res) => {
     return res.json({ uuid, rtt: null });
   }
 
-  const { exec } = require('child_process');
-  exec(`ping -c 1 -W 3 ${ip}`, { timeout: 6000 }, (err, stdout) => {
+  const { execFile } = require('child_process');
+  execFile('ping', ['-c', '1', '-W', '3', ip], { timeout: 6000 }, (err, stdout) => {
     let rtt = null;
     let unreachable = false;
     const stderr = err ? (err.stderr || '') : '';

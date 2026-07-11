@@ -1,20 +1,30 @@
-# OPNsense WOL
+# OPNsense WOL Dashboard
 
-A lightweight web dashboard for waking devices on your network through the OPNsense WOL plugin API — with live ping latency (RTT), table/grid views, scheduled wakes, and ARP-based host status. Built with Express.js.
+[![Docker](https://img.shields.io/badge/docker-ready-blue?logo=docker)](https://hub.docker.com/) [![License: ISC](https://img.shields.io/badge/license-ISC-green)](LICENSE) [![Node](https://img.shields.io/badge/node-22-alpine?logo=nodedotjs)](package.json)
 
-![Dashboard Grid View](./public/screenshot-grid.png) *Grid view* | ![Dashboard Table View](./public/screenshot-table.png) *Table view*
+A lightweight web dashboard for waking devices on your network through the **OPNsense WOL plugin API** — with live ping latency (RTT), table/grid views, scheduled wake-ups, and ARP-based host status. Built with Express.js and vanilla JS.
+
+| Grid View | Table View |
+|---|---|
+| ![Grid view screenshot](public/screenshot-grid.png) | ![Table view screenshot](public/screenshot-table.png) |
 
 > 🌐 **Live Demo:** [wol-demo.twk95.com](https://wol-demo.twk95.com/) — Fully functional dashboard with mock hosts, no OPNsense required.
 
-## Security
+---
 
-> ⚠️ **This app has no built-in authentication.** Every endpoint — including `/api/wake/*` — is open to anyone who can reach the server. Deploy **exclusively behind a reverse proxy** (OPNsense HAProxy, Nginx, Caddy) with authentication. Designed for trusted LAN or VPN.
+## 🛡️ Security Notice
+
+> ⚠️ **This app has no built-in authentication.** Every endpoint — including `/api/wake/*` — is open to anyone who can reach the server.
+>
+> **Deploy exclusively behind a reverse proxy** (OPNsense HAProxy, Nginx, Caddy) with authentication, or run it in a trusted LAN / VPN environment only.
+
+---
 
 ## Features
 
 | | |
 |---|---|
-| **Host Discovery** | Fetches WOL-configured hosts from OPNsense |
+| **Host Discovery** | Auto-fetches WOL-configured hosts from OPNsense |
 | **One-Click Wake** | Sends magic packet via OPNsense API with toast confirmation |
 | **Wake All** | Single button wakes every host at once |
 | **Host Status** | Real-time online/offline via OPNsense ARP table — MAC-level, no ping needed |
@@ -26,7 +36,9 @@ A lightweight web dashboard for waking devices on your network through the OPNse
 | **Wake History** | Tracks last wake time per host |
 | **Responsive** | Cards adapt 1–3 columns; table scrolls on mobile |
 | **Auto-Refresh** | Polls OPNsense every 30s |
-| **Dockerized** | Production Alpine Node.js image |
+| **Dockerized** | Production Alpine Node.js image (~160 MB) |
+
+---
 
 ## How It Works
 
@@ -43,6 +55,8 @@ A lightweight web dashboard for waking devices on your network through the OPNse
 ```
 
 The Express server bridges the browser and OPNsense — it fetches hosts, merges ARP status + IP, fires magic packets, runs system pings (60s cache), and handles the in-process wake scheduler. All view preferences are persisted in `localStorage`.
+
+---
 
 ## Getting Started
 
@@ -66,28 +80,48 @@ All settings via environment variables:
 | `VERIFY_SSL` | ❌ | `false` | Set to `"true"` to verify SSL cert |
 | `DATA_DIR` | ❌ | `./data` | Persistent data (schedules, wake history) |
 
-### Docker Compose
-
-Drop this in as `docker-compose.yml`:
+### Quick Start (Demo)
 
 ```yaml
+# docker-compose.yml
 services:
   opnsense-wol:
-    image: git.twk95.com/twk95/opnsense-wol:latest
+    image: ironicallyjesus/opnsense-wol-dash:latest
     container_name: opnsense-wol
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      # ── Demo mode (no OPNsense required) ──
       DEMO_MODE: "true"
+    volumes:
+      - wol_data:/data
 
-      # ── Production: uncomment and fill in ──
-      # OPNSENSE_URL: "https://opnsense.lan"
-      # OPNSENSE_API_KEY: "your-api-key"
-      # OPNSENSE_API_SECRET: "your-api-secret"
+volumes:
+  wol_data:
+```
 
-      # ── Optional ──
+```bash
+docker compose up -d
+# Open http://localhost:3000
+```
+
+### Production
+
+For production, drop `DEMO_MODE`, set your OPNsense credentials, and place it behind a reverse proxy:
+
+```yaml
+services:
+  opnsense-wol:
+    image: ironicallyjesus/opnsense-wol-dash:latest
+    container_name: opnsense-wol
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"       # Only listen on localhost → reverse proxy
+    environment:
+      OPNSENSE_URL: "https://opnsense.lan"
+      OPNSENSE_API_KEY: "your-api-key"
+      OPNSENSE_API_SECRET: "your-api-secret"
+      # Optional:
       # PORT: "3000"
       # DATA_DIR: "/data"
       # VERIFY_SSL: "false"
@@ -98,19 +132,19 @@ volumes:
   wol_data:
 ```
 
-For **production**, drop `DEMO_MODE`, uncomment the OPNsense credentials, and place it behind a reverse proxy.
-
 > **Note:** Status is determined via OPNsense's ARP table (API), not ICMP — no special network config needed.
+
+---
 
 ## Custom CSS
 
 Mount your own stylesheet at `/app/custom.css` to override every visual element:
 
-```sh
+```bash
 docker run -d -p 3000:3000 \
   -e DEMO_MODE=true \
   -v /path/to/cyberpunk.css:/app/custom.css \
-  git.twk95.com/twk95/opnsense-wol:latest
+  ironicallyjesus/opnsense-wol-dash:latest
 ```
 
 Or in Docker Compose:
@@ -120,7 +154,26 @@ volumes:
   - ./custom.css:/app/custom.css:ro
 ```
 
-Use `!important` to override built-in theme styles. See [`cyberpunk.css`](./cyberpunk.css) for a complete example — neon cyan/magenta, monospace, scanline overlays, CRT flicker, fully themed modals and tables.
+Use `!important` to override built-in theme styles. See [`cyberpunk.css`](./cyberpunk.css) for a complete example — neon cyan/magenta, monospace, CRT flicker, fully themed modals and tables.
+
+---
+
+## Building from Source
+
+```bash
+git clone https://github.com/your-username/opnsense-wol-dash.git
+cd opnsense-wol-dash
+
+# Run natively
+npm install
+DEMO_MODE=true node server.js
+
+# Or build the Docker image locally
+docker build -t opnsense-wol .
+docker run -d -p 3000:3000 -e DEMO_MODE=true opnsense-wol
+```
+
+---
 
 ## API Endpoints
 
@@ -137,6 +190,8 @@ Use `!important` to override built-in theme styles. See [`cyberpunk.css`](./cybe
 | `DELETE` | `/api/schedules/:id` | Delete a scheduled wake |
 | `GET` | `/health` | Health check |
 
+---
+
 ## Project Structure
 
 ```
@@ -144,17 +199,20 @@ Use `!important` to override built-in theme styles. See [`cyberpunk.css`](./cybe
 ├── lib/
 │   └── scheduler.js       # In-process scheduled wake module
 ├── public/
-│   ├── index.html         # Frontend (Tailwind CDN, themes, wake history)
+│   ├── index.html         # Single-page frontend (vanilla JS, CSS variables)
 │   ├── screenshot-grid.png
 │   └── screenshot-table.png
-├── Dockerfile             # Production Alpine Node.js build
+├── Dockerfile             # Multi-stage Alpine Node.js build
 ├── docker-compose.yml     # One-command demo or production deployment
+├── cyberpunk.css          # Example custom CSS theme
 ├── .env.example           # Environment variable template
 ├── .dockerignore
 ├── package.json
-└── .gitea/workflows/      # CI/CD (Docker build + publish on v* tags)
+└── .gitea/workflows/      # CI/CD pipelines (GitHub Actions-compatible)
 ```
+
+---
 
 ## License
 
-ISC
+[ISC](LICENSE) — do what you want with it.
