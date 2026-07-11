@@ -8,7 +8,7 @@ on:
 
 jobs:
   publish:
-    uses: twk95/actions/.gitea/workflows/dockerhub-publish.yml@main
+    uses: twk95/actions/.gitea/workflows/dockerhub-publish.yml@a84e4add8a3a7c5b0c10349ae33ac549c41bf4de
     with:
       image_name: ironicallyjesus/opnsense-wol-dash
     secrets:
