@@ -12,7 +12,6 @@ A lightweight web dashboard for waking devices on your network through the OPNse
 
 ## Features
 
-| | | |
 |---|---|---|
 | **Host Discovery** | Fetches WOL-configured hosts from OPNsense |
 | **One-Click Wake** | Sends magic packet via OPNsense API with toast confirmation |
