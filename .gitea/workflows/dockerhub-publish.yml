@@ -2,15 +2,23 @@ name: Publish to Docker Hub
 run-name: Publish ${{ gitea.ref_name }} to Docker Hub by @${{ gitea.actor }}
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
+  workflow_call:
+    inputs:
+      image_name:
+        required: true
+        type: string
+        description: "Full Docker Hub image name (e.g. 'ironicallyjesus/opnsense-wol-dash')"
+    secrets:
+      DOCKER_HUB_USERNAME:
+        required: true
+      DOCKER_HUB_TOKEN:
+        required: true
 
 jobs:
   publish:
-    uses: twk95/actions/.gitea/workflows/dockerhub-publish.yml@a84e4add8a3a7c5b0c10349ae33ac549c41bf4de
+    uses: twk95/actions/.gitea/workflows/dockerhub-publish.yml@main
     with:
-      image_name: ironicallyjesus/opnsense-wol-dash
+      image_name: ${{ inputs.image_name }}
     secrets:
       DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
       DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}

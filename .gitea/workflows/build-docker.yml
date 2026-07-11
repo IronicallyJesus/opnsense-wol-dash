@@ -8,18 +8,29 @@ on:
 
 jobs:
   build:
-    uses: twk95/actions/.gitea/workflows/build-image.yml@bcb802d4b14904e6164ccaa7dca0c841f1566cd6
+    uses: twk95/actions/.gitea/workflows/build-image.yml@main
     secrets: inherit
-  deploy-main:
+
+  publish-docker-hub:
     needs: build
-    uses: twk95/actions/.gitea/workflows/dockge-deploy.yml@bcb802d4b14904e6164ccaa7dca0c841f1566cd6
+    uses: ./.gitea/workflows/dockerhub-publish.yml
+    with:
+      image_name: ironicallyjesus/opnsense-wol-dash
+    secrets:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+  deploy-main:
+    needs: publish-docker-hub
+    uses: twk95/actions/.gitea/workflows/dockge-deploy.yml@main
     with:
       service_name: opnsense-wol
       stacks_dir: /opt/stacks/opnsense-wol
     secrets: inherit
+
   deploy-demo:
-    needs: build
-    uses: twk95/actions/.gitea/workflows/dockge-deploy.yml@bcb802d4b14904e6164ccaa7dca0c841f1566cd6
+    needs: publish-docker-hub
+    uses: twk95/actions/.gitea/workflows/dockge-deploy.yml@main
     with:
       service_name: opnsense-wol-demo
       stacks_dir: /opt/stacks/opnsense-wol
