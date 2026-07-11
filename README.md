@@ -80,32 +80,7 @@ All settings via environment variables:
 | `VERIFY_SSL` | ❌ | `false` | Set to `"true"` to verify SSL cert |
 | `DATA_DIR` | ❌ | `./data` | Persistent data (schedules, wake history) |
 
-### Quick Start (Demo)
-
-```yaml
-# docker-compose.yml
-services:
-  opnsense-wol:
-    image: ironicallyjesus/opnsense-wol-dash:latest
-    container_name: opnsense-wol
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      DEMO_MODE: "true"
-    volumes:
-      - wol_data:/data
-
-volumes:
-  wol_data:
-```
-
-```bash
-docker compose up -d
-# Open http://localhost:3000
-```
-
-### Production
+### Deployment
 
 For production, drop `DEMO_MODE`, set your OPNsense credentials, and place it behind a reverse proxy:
 
@@ -132,7 +107,7 @@ volumes:
   wol_data:
 ```
 
-> **Note:** Status is determined via OPNsense's ARP table (API), not ICMP — no special network config needed.
+> **Note:** Status is determined via OPNsense's ARP table (API), not ICMP — no special network config needed. Latency (RTT) stats *do* require ICMP reachability from the container host to the target devices.
 
 ---
 
