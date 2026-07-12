@@ -557,6 +557,10 @@ body {
   color: var(--text);
 }
 
+.th-sort {
+  transition: color 0.15s;
+}
+
 .table-wrap td {
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border);

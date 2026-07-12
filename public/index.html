@@ -136,7 +136,41 @@
         const statusMsg = document.getElementById('status-msg');
         let hosts = [];
         let rttData = {};       // { uuid: rtt_ms }
-        let refreshInterval = null;
+        let sortState = { column: '', asc: true };
+
+        // ── Table Sort ──
+        function sortTable(column) {
+            if (sortState.column === column) sortState.asc = !sortState.asc;
+            else { sortState.column = column; sortState.asc = true; }
+            renderTable();
+        }
+        function applySort(list) {
+            const col = sortState.column;
+            if (!col) return [...list];
+            const dir = sortState.asc ? 1 : -1;
+            const wakeHistory = getWakeHistory();
+            const getVal = (h) => {
+                switch (col) {
+                    case 'name': return (h.descr || '').toLowerCase();
+                    case 'iface': return (h.friendly_interface || h.interface || h['%interface'] || '').toLowerCase();
+                    case 'mac': return (h.mac || '').toUpperCase();
+                    case 'ip': return (h.ip || '');
+                    case 'latency': return rttData[h.uuid] ?? (h._online === true ? Infinity : -1);
+                    case 'lastwake': return wakeHistory[h.uuid]?.time || 0;
+                    default: return '';
+                }
+            };
+            return [...list].sort((a, b) => {
+                const va = getVal(a), vb = getVal(b);
+                if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+                const sa = String(va), sb = String(vb);
+                return sa.localeCompare(sb) * dir;
+            });
+        }
+        function sortIndicator(col) {
+            if (sortState.column !== col) return '';
+            return sortState.asc ? ' ▲' : ' ▼';
+        }
 
         // ── View Mode ──
         function getView() { return localStorage.getItem('opnsense-wol-view') || 'grid'; }
@@ -361,10 +395,7 @@
 
         // ── Render Table ──
         function renderTable() {
-            const sorted = [...hosts].sort((a, b) => {
-                const order = { true: 0, null: 1, false: 2 };
-                return (order[a._online] ?? 1) - (order[b._online] ?? 1);
-            });
+            const sorted = applySort(hosts);
 
             const rows = sorted.map(host => {
                 const descr = esc(host.descr || 'Unknown Host');
@@ -399,12 +430,12 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Host</th>
-                                <th>Interface</th>
-                                <th>MAC</th>
-                                <th>IP</th>
-                                <th>Latency</th>
-                                <th>Last Wake</th>
+                                <th onclick="sortTable('name')" role="button" tabindex="0" class="th-sort">Host${sortIndicator('name')}</th>
+                                <th onclick="sortTable('iface')" role="button" tabindex="0" class="th-sort">Interface${sortIndicator('iface')}</th>
+                                <th onclick="sortTable('mac')" role="button" tabindex="0" class="th-sort">MAC${sortIndicator('mac')}</th>
+                                <th onclick="sortTable('ip')" role="button" tabindex="0" class="th-sort">IP${sortIndicator('ip')}</th>
+                                <th onclick="sortTable('latency')" role="button" tabindex="0" class="th-sort">Latency${sortIndicator('latency')}</th>
+                                <th onclick="sortTable('lastwake')" role="button" tabindex="0" class="th-sort">Last Wake${sortIndicator('lastwake')}</th>
                                 <th class="td-wake">Action</th>
                             </tr>
                         </thead>
