@@ -136,7 +136,7 @@ Use `!important` to override built-in theme styles. See [`cyberpunk.css`](./cybe
 ## Building from Source
 
 ```bash
-git clone https://github.com/your-username/opnsense-wol-dash.git
+git clone https://github.com/IronicallyJesus/opnsense-wol-dash.git
 cd opnsense-wol-dash
 
 # Run natively
