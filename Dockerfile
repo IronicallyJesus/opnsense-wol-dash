@@ -6,6 +6,7 @@ RUN npm ci --omit=dev
 
 # ── Runtime Stage ──
 FROM node:22-alpine
+RUN apk upgrade --no-cache
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules
