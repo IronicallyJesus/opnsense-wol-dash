@@ -7,6 +7,12 @@ RUN npm ci --omit=dev
 # ── Runtime Stage ──
 FROM node:22-alpine
 RUN apk upgrade --no-cache
+
+# npm CLI and its bundled dependencies (~150 packages) are NOT needed at
+# runtime — the app runs `node server.js` directly.  Removing them
+# eliminates all Docker Hub Scout CVEs in npm internal packages:
+#   picomatch, sigstore/@sigstore/core, tar, brace-expansion, ip-address
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules
